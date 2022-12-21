@@ -1,17 +1,15 @@
+import fp from "fastify-plugin";
+import { compare, hash } from "bcryptjs";
 import prisma from "@libs/prisma";
 import { User } from "@prisma/client";
 import session from "@utils/session";
-import fp from "fastify-plugin";
 
 interface UpdateUserProps {
-  Body: Pick<
-    User,
-    "email" | "username" | "fullName" | "avatar" | "description"
-  >;
+  Body: Pick<User, "email" | "username" | "fullName" | "avatar" | "bio">;
 }
 
 interface UpdatePasswordProps {
-  Body: Pick<User, "password">;
+  Body: Pick<User, "password"> & { newPassword: string };
 }
 
 export default fp(async (fastify, opts) => {
@@ -68,7 +66,47 @@ export default fp(async (fastify, opts) => {
     }
   });
 
-  fastify.patch<UpdatePasswordProps>("/users/password", (request, reply) => {
-    return reply.code(200).send({ status: "ok" });
-  });
+  fastify.patch<UpdatePasswordProps>(
+    "/users/password",
+    async (request, reply) => {
+      try {
+        const { authorization } = request.headers;
+        const { password, newPassword } = request.body;
+
+        if (password === newPassword) {
+          return reply.code(401).send({
+            message: `New password cannot be the same as the previous.`,
+          });
+        }
+
+        const me = await session(authorization);
+        const user = await prisma.user.findFirst({
+          where: {
+            id: me.id,
+          },
+        });
+
+        if (!(await compare(password, user.password))) {
+          return reply.code(401).send({
+            message: `Invalid password.`,
+          });
+        }
+
+        const encryptedPassword = await hash(newPassword, 10);
+
+        await prisma.user.update({
+          data: {
+            password: encryptedPassword,
+          },
+          where: {
+            id: user.id,
+          },
+        });
+
+        return reply.code(200).send({ message: "ok" });
+      } catch (error) {
+        return reply.code(500).send({ message: `Server error!` });
+      }
+    }
+  );
 });

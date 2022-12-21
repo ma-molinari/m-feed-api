@@ -5,7 +5,7 @@ CREATE TABLE "User" (
     "username" VARCHAR(200) NOT NULL,
     "fullName" VARCHAR(200) NOT NULL,
     "password" VARCHAR(200) NOT NULL,
-    "description" VARCHAR(500),
+    "bio" VARCHAR(500),
     "avatar" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

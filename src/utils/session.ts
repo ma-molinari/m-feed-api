@@ -18,9 +18,11 @@ export default async function session(authorization: string): Promise<User> {
     const user = await prisma.user.findUnique({
       select: {
         id: true,
-        email: true,
-        username: true,
+        avatar: true,
         fullName: true,
+        username: true,
+        email: true,
+        bio: true,
       },
       where: {
         id: parseInt(decoded.id),
