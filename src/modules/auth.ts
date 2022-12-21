@@ -66,8 +66,11 @@ export default fp(async (fastify, opts) => {
       });
 
       if (user) {
-        reply.code(400).send({ message: `Email or username already exist.` });
-        return;
+        if (user.email === email) {
+          return reply.code(400).send({ message: `Email already used.` });
+        }
+
+        return reply.code(400).send({ message: `Username already used.` });
       }
 
       const encryptedPassword = await hash(password, 10);

@@ -16,7 +16,7 @@ model User {
   username String @unique @db.VarChar(200)
   fullName String @db.VarChar(200)
   password String @db.VarChar(200)
-  description String? @db.VarChar(500)
+  bio String? @db.VarChar(500)
   avatar String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
