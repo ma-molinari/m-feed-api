@@ -1,8 +1,14 @@
 import prisma from "@libs/prisma";
-import { User } from "@prisma/client";
+import { Post, User } from "@prisma/client";
 import { verify } from "jsonwebtoken";
 
-export default async function session(authorization: string): Promise<User> {
+interface UserProps extends User {
+  posts: Post[];
+}
+
+export default async function session(
+  authorization: string
+): Promise<UserProps> {
   try {
     if (!authorization) {
       return null;
@@ -23,6 +29,7 @@ export default async function session(authorization: string): Promise<User> {
         username: true,
         email: true,
         bio: true,
+        posts: true,
       },
       where: {
         id: parseInt(decoded.id),
@@ -33,7 +40,7 @@ export default async function session(authorization: string): Promise<User> {
       return null;
     }
 
-    return user as User;
+    return user as UserProps;
   } catch (error) {
     console.log(error);
     return null;

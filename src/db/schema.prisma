@@ -11,13 +11,24 @@ datasource db {
 }
 
 model User {
-  id      Int      @id @default(autoincrement())
-  email   String   @unique @db.VarChar(500)
-  username String @unique @db.VarChar(200)
-  fullName String @db.VarChar(200)
-  password String @db.VarChar(200)
-  bio String? @db.VarChar(500)
-  avatar String?
+  id        Int      @id @default(autoincrement())
+  email     String   @unique @db.VarChar(500)
+  username  String   @unique @db.VarChar(200)
+  fullName  String   @db.VarChar(200)
+  password  String   @db.VarChar(200)
+  bio       String?  @db.VarChar(500)
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  posts     Post[]
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  content   String?
+  image     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
