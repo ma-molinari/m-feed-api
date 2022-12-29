@@ -54,7 +54,12 @@ export default fp(async (fastify, opts) => {
 
       const me = await session(authorization);
 
-      const ct = await prisma.post.count();
+      const ct = await prisma.post.count({
+        where: {
+          userId: { not: me.id },
+        },
+      });
+
       const posts = await prisma.post.findMany({
         skip: parseInt(offset),
         take: parseInt(limit),
