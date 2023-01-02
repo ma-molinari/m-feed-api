@@ -7,42 +7,41 @@ interface UserProps extends User {
 }
 
 export default async function session(
-  authorization: string
+	authorization: string
 ): Promise<UserProps> {
-  try {
-    if (!authorization) {
-      return null;
-    }
+	try {
+		if (!authorization) {
+			return null;
+		}
 
-    const [, token] = authorization.split(` `);
-    const decoded = verify(token, process.env.JWT_KEY) as { id: string };
+		const [, token] = authorization.split(` `);
+		const decoded = verify(token, process.env.JWT_KEY) as { id: string };
 
-    if (!decoded) {
-      return null;
-    }
+		if (!decoded) {
+			return null;
+		}
 
-    const user = await prisma.user.findUnique({
-      select: {
-        id: true,
-        avatar: true,
-        fullName: true,
-        username: true,
-        email: true,
-        bio: true,
-        posts: true,
-      },
-      where: {
-        id: parseInt(decoded.id),
-      },
-    });
+		const user = await prisma.user.findUnique({
+			select: {
+				id: true,
+				avatar: true,
+				fullName: true,
+				username: true,
+				email: true,
+				bio: true,
+				posts: true,
+			},
+			where: {
+				id: parseInt(decoded.id),
+			},
+		});
 
-    if (!user) {
-      return null;
-    }
+		if (!user) {
+			return null;
+		}
 
-    return user as UserProps;
-  } catch (error) {
-    console.log(error);
-    return null;
-  }
+		return user as UserProps;
+	} catch (error) {
+		return null;
+	}
 }

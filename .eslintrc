@@ -1,0 +1,21 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "rules": {
+    "no-console": "warn",
+    "semi": "error",
+    "no-trailing-spaces": "error",
+    "indent": ["error", "tab"],
+    "multiline-ternary": "error",
+    "no-duplicate-imports": "error",
+    "no-unused-expressions": "error",
+    "prefer-const": "error",
+    "valid-jsdoc": "error"
+  }
+}

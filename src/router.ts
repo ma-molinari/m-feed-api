@@ -5,10 +5,10 @@ import UserRoutes from "@modules/user";
 import PostRoutes from "@modules/post";
 
 export async function publicRouter(fastify: FastifyInstance) {
-  fastify.register(AuthRoutes);
+	fastify.register(AuthRoutes);
 }
 
 export async function privateRouter(fastify: FastifyInstance) {
-  fastify.register(UserRoutes);
-  fastify.register(PostRoutes);
+	fastify.register(UserRoutes);
+	fastify.register(PostRoutes);
 }
