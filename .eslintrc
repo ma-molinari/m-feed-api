@@ -15,7 +15,6 @@
     "multiline-ternary": "error",
     "no-duplicate-imports": "error",
     "no-unused-expressions": "error",
-    "prefer-const": "error",
-    "valid-jsdoc": "error"
+    "prefer-const": "error"
   }
 }

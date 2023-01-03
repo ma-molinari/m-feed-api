@@ -12,7 +12,7 @@ interface UpdatePasswordProps {
   Body: Pick<User, "password"> & { newPassword: string };
 }
 
-export default fp(async (fastify, opts) => {
+export default fp(async (fastify) => {
 	fastify.get("/users/me", async (request, reply) => {
 		try {
 			const { authorization } = request.headers;
@@ -109,4 +109,24 @@ export default fp(async (fastify, opts) => {
 			}
 		}
 	);
+
+	fastify.post("/users/follow", async (request, reply) => {
+		try {
+			return reply.code(204);
+			//following
+			// await RedisSetZADD("user:" + 1 + ":following", [Date.now(), 2]);
+			//followers
+			// await RedisSetZADD("user:" + 2 + ":followers", [Date.now(), 1]);
+		} catch (error) {
+			return reply.code(500).send({ message: `Server error!` });
+		}
+	});
+
+	fastify.post("/users/unfollow", async (request, reply) => {
+		try {
+			return reply.code(204);
+		} catch (error) {
+			return reply.code(500).send({ message: `Server error!` });
+		}
+	});
 });
