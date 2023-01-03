@@ -9,7 +9,7 @@ interface PaginationProps {
   };
 }
 
-export default fp(async (fastify, opts) => {
+export default fp(async (fastify) => {
 	fastify.get<PaginationProps>("/posts/feed", async (request, reply) => {
 		try {
 			const { authorization } = request.headers;

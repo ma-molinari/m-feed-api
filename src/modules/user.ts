@@ -3,6 +3,7 @@ import { compare, hash } from "bcryptjs";
 import prisma from "@libs/prisma";
 import { User } from "@prisma/client";
 import session from "@utils/session";
+import { RedisSetZADD } from "@libs/redis";
 
 interface UpdateUserProps {
   Body: Pick<User, "email" | "username" | "fullName" | "avatar" | "bio">;
@@ -10,6 +11,10 @@ interface UpdateUserProps {
 
 interface UpdatePasswordProps {
   Body: Pick<User, "password"> & { newPassword: string };
+}
+
+interface FollowProps {
+  Body: { userId: number };
 }
 
 export default fp(async (fastify) => {
@@ -110,13 +115,30 @@ export default fp(async (fastify) => {
 		}
 	);
 
-	fastify.post("/users/follow", async (request, reply) => {
+	fastify.post<FollowProps>("/users/follow", async (request, reply) => {
 		try {
-			return reply.code(204);
-			//following
-			// await RedisSetZADD("user:" + 1 + ":following", [Date.now(), 2]);
-			//followers
-			// await RedisSetZADD("user:" + 2 + ":followers", [Date.now(), 1]);
+			const { authorization } = request.headers;
+			const { userId } = request.body;
+
+			const me = await session(authorization);
+			const usersFollowing = [2,3];
+
+			if (!userId) {
+				return reply.code(400).send({ message: `UserID is required.` });
+			}
+
+			if (me.id === userId) {
+				return reply.code(400).send({ message: `Can't follow yourself.` });
+			}
+
+			if (usersFollowing.includes(userId)) {
+				return reply.code(400).send({ message: `User has already been followed.` });
+			}
+
+			await RedisSetZADD("user:" + me.id + ":following", [Date.now(), userId]);
+			await RedisSetZADD("user:" + userId + ":followers", [Date.now(), me.id]);
+
+			return reply.code(200).send({ message: "OK" });
 		} catch (error) {
 			return reply.code(500).send({ message: `Server error!` });
 		}
