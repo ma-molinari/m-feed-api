@@ -56,15 +56,24 @@ export const RedisGet = async (key: string) => {
 /**
  * Sorted List
  */
-export const RedisSetZADD = async (key: string, payload: (string | number | Buffer)[]) => {
+export const RedisAddList = async (key: string, payload: (string | number | Buffer)[]) => {
 	const result = await redis.zadd(key, ...payload);
 	return result === 1;
 };
 
-export const RedisGetZADD = async (key: string) => {
+export const RedisGetList = async (key: string) => {
 	try {
-		const result = await redis.hgetall(key);
+		const result = await redis.zrange(key, 0, -1);
 		return result;
+	} catch (error) {
+		return null;
+	}
+};
+
+export const RedisRemoveFromList = async (key: string, payload: string | number) => {
+	try {
+		const result = await redis.zrem(key, payload);
+		return result === 1;
 	} catch (error) {
 		return null;
 	}

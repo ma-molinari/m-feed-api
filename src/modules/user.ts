@@ -3,7 +3,7 @@ import { compare, hash } from "bcryptjs";
 import prisma from "@libs/prisma";
 import { User } from "@prisma/client";
 import session from "@utils/session";
-import { RedisSetZADD } from "@libs/redis";
+import { RedisGetList, RedisAddList, RedisRemoveFromList } from "@libs/redis";
 
 interface UpdateUserProps {
   Body: Pick<User, "email" | "username" | "fullName" | "avatar" | "bio">;
@@ -119,9 +119,8 @@ export default fp(async (fastify) => {
 		try {
 			const { authorization } = request.headers;
 			const { userId } = request.body;
-
 			const me = await session(authorization);
-			const usersFollowing = [2,3];
+			const usersFollowingId = await RedisGetList("user:" + me.id + ":following");
 
 			if (!userId) {
 				return reply.code(400).send({ message: `UserID is required.` });
@@ -131,12 +130,12 @@ export default fp(async (fastify) => {
 				return reply.code(400).send({ message: `Can't follow yourself.` });
 			}
 
-			if (usersFollowing.includes(userId)) {
+			if (usersFollowingId.includes(userId.toString())) {
 				return reply.code(400).send({ message: `User has already been followed.` });
 			}
 
-			await RedisSetZADD("user:" + me.id + ":following", [Date.now(), userId]);
-			await RedisSetZADD("user:" + userId + ":followers", [Date.now(), me.id]);
+			await RedisAddList("user:" + me.id + ":following", [Date.now(), userId]);
+			await RedisAddList("user:" + userId + ":followers", [Date.now(), me.id]);
 
 			return reply.code(200).send({ message: "OK" });
 		} catch (error) {
@@ -144,9 +143,25 @@ export default fp(async (fastify) => {
 		}
 	});
 
-	fastify.post("/users/unfollow", async (request, reply) => {
+	fastify.post<FollowProps>("/users/unfollow", async (request, reply) => {
 		try {
-			return reply.code(204);
+			const { authorization } = request.headers;
+			const { userId } = request.body;
+			const me = await session(authorization);
+			const usersFollowingId = await RedisGetList("user:" + me.id + ":following");
+
+			if (!userId) {
+				return reply.code(400).send({ message: `UserID is required.` });
+			}
+
+			if (!usersFollowingId.includes(userId.toString())) {
+				return reply.code(400).send({ message: `Unable to unfollow user.` });
+			}
+
+			await RedisRemoveFromList("user:" + me.id + ":following", userId);
+			await RedisRemoveFromList("user:" + userId + ":followers", me.id);
+
+			return reply.code(200).send({ message: "OK" });
 		} catch (error) {
 			return reply.code(500).send({ message: `Server error!` });
 		}
