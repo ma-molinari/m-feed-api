@@ -126,7 +126,7 @@ export async function follow(request: FastifyRequest<FollowProps>, reply: Fastif
 			return reply.code(400).send({ message: `Can't follow yourself.` });
 		}
 
-		if (followedUsersIds.includes(userId.toString())) {
+		if (followedUsersIds.includes(userId)) {
 			return reply.code(400).send({ message: `User has already been followed.` });
 		}
 
@@ -149,7 +149,7 @@ export async function unfollow(request: FastifyRequest<FollowProps>, reply: Fast
 			return reply.code(400).send({ message: `UserID is required.` });
 		}
 
-		if (!followedUsersIds.includes(userId.toString())) {
+		if (!followedUsersIds.includes(userId)) {
 			return reply.code(400).send({ message: `Unable to unfollow user.` });
 		}
 
@@ -171,10 +171,12 @@ export async function unfollowUser(meId: number, userId: number): Promise<void> 
 	await RedisRemoveFromList("user:" + userId + ":followers", meId);
 }
 
-export async function followerIds(userId: number): Promise<string[]> {
-	return await RedisGetList("user:" + userId + ":followers");
+export async function followerIds(userId: number): Promise<number[]> {
+	const userIds = await RedisGetList("user:" + userId + ":followers");
+	return userIds.map((i) => parseInt(i));
 }
 
-export async function followingIds(userId: number): Promise<string[]> {
-	return await RedisGetList("user:" + userId + ":following");
+export async function followingIds(userId: number): Promise<number[]> {
+	const userIds = await RedisGetList("user:" + userId + ":following");
+	return userIds.map((i) => parseInt(i));
 }

@@ -1,6 +1,7 @@
 import prisma from "@libs/prisma";
 import session from "@utils/session";
 import { FastifyReply, FastifyRequest } from "fastify";
+import { followingIds } from "./user";
 
 interface PaginationProps {
   Querystring: {
@@ -13,13 +14,12 @@ export async function feed(request: FastifyRequest<PaginationProps>, reply: Fast
 	try {
 		const { authorization } = request.headers;
 		const { limit = "10", offset = "0" } = request.query;
-
 		const me = await session(authorization);
-		const usersFollowing = [2];
+		const followedUsersIds = await followingIds(me.id);
 
 		const ct = await prisma.post.count({
 			where: {
-				userId: { in: [...usersFollowing, me.id] },
+				userId: { in: [...followedUsersIds, me.id] },
 			},
 		});
 
@@ -30,10 +30,10 @@ export async function feed(request: FastifyRequest<PaginationProps>, reply: Fast
 				user: true,
 			},
 			where: {
-				userId: { in: [...usersFollowing, me.id] },
+				userId: { in: [...followedUsersIds, me.id] },
 			},
 			orderBy: {
-				createdAt: "desc",
+				id: "desc",
 			},
 		});
 
@@ -50,12 +50,12 @@ export async function discover(request: FastifyRequest<PaginationProps>, reply: 
 	try {
 		const { authorization } = request.headers;
 		const { limit = "10", offset = "0" } = request.query;
-
 		const me = await session(authorization);
+		const followedUsersIds = await followingIds(me.id);
 
 		const ct = await prisma.post.count({
 			where: {
-				userId: { not: me.id },
+				userId: { notIn: [...followedUsersIds, me.id] },
 			},
 		});
 
@@ -66,10 +66,10 @@ export async function discover(request: FastifyRequest<PaginationProps>, reply: 
 				user: true,
 			},
 			where: {
-				userId: { not: me.id },
+				userId: { notIn: [...followedUsersIds, me.id] },
 			},
 			orderBy: {
-				createdAt: "desc",
+				id: "desc",
 			},
 		});
 
