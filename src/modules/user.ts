@@ -116,7 +116,7 @@ export async function follow(request: FastifyRequest<FollowProps>, reply: Fastif
 		const { authorization } = request.headers;
 		const { userId } = request.body;
 		const me = await session(authorization);
-		const usersFollowingId = await RedisGetList("user:" + me.id + ":following");
+		const followedUsersIds = await followingIds(me.id);
 
 		if (!userId) {
 			return reply.code(400).send({ message: `UserID is required.` });
@@ -126,12 +126,11 @@ export async function follow(request: FastifyRequest<FollowProps>, reply: Fastif
 			return reply.code(400).send({ message: `Can't follow yourself.` });
 		}
 
-		if (usersFollowingId.includes(userId.toString())) {
+		if (followedUsersIds.includes(userId.toString())) {
 			return reply.code(400).send({ message: `User has already been followed.` });
 		}
 
-		await RedisAddList("user:" + me.id + ":following", [Date.now(), userId]);
-		await RedisAddList("user:" + userId + ":followers", [Date.now(), me.id]);
+		await followUser(me.id, userId);
 
 		return reply.code(200).send({ message: "OK" });
 	} catch (error) {
@@ -144,21 +143,38 @@ export async function unfollow(request: FastifyRequest<FollowProps>, reply: Fast
 		const { authorization } = request.headers;
 		const { userId } = request.body;
 		const me = await session(authorization);
-		const usersFollowingId = await RedisGetList("user:" + me.id + ":following");
+		const followedUsersIds = await followingIds(me.id);
 
 		if (!userId) {
 			return reply.code(400).send({ message: `UserID is required.` });
 		}
 
-		if (!usersFollowingId.includes(userId.toString())) {
+		if (!followedUsersIds.includes(userId.toString())) {
 			return reply.code(400).send({ message: `Unable to unfollow user.` });
 		}
 
-		await RedisRemoveFromList("user:" + me.id + ":following", userId);
-		await RedisRemoveFromList("user:" + userId + ":followers", me.id);
+		await unfollowUser(me.id, userId);
 
 		return reply.code(200).send({ message: "OK" });
 	} catch (error) {
 		return reply.code(500).send({ message: `Server error!` });
 	}
+}
+
+export async function followUser(meId: number, userId: number): Promise<void> {
+	await RedisAddList("user:" + meId + ":following", [Date.now(), userId]);
+	await RedisAddList("user:" + userId + ":followers", [Date.now(), meId]);
+}
+
+export async function unfollowUser(meId: number, userId: number): Promise<void> {
+	await RedisRemoveFromList("user:" + meId + ":following", userId);
+	await RedisRemoveFromList("user:" + userId + ":followers", meId);
+}
+
+export async function followerIds(userId: number): Promise<string[]> {
+	return await RedisGetList("user:" + userId + ":followers");
+}
+
+export async function followingIds(userId: number): Promise<string[]> {
+	return await RedisGetList("user:" + userId + ":following");
 }
