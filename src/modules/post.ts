@@ -3,14 +3,16 @@ import session from "@utils/session";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { RedisClearKeyByPattern, RedisGetJson, RedisSetTTL } from "@libs/redis";
 import { followingIds } from "./user";
-import { Post, User } from "@prisma/client";
+import logger from "@libs/logger";
 
-interface PaginationProps {
+interface PaginationProps<T = {}> {
   Querystring: {
     limit: string;
     offset: string;
-  };
+  } & T;
 }
+
+interface SearchProps extends PaginationProps<{ search: string }> {}
 
 export async function feed(
   request: FastifyRequest<PaginationProps>,
@@ -97,5 +99,72 @@ export async function explore(
     });
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
+  }
+}
+
+export async function search(
+  request: FastifyRequest<SearchProps>,
+  reply: FastifyReply
+) {
+  try {
+    const { authorization } = request.headers;
+    const { limit = "10", offset = "0", search = "" } = request.query;
+    const me = await session(authorization);
+
+    const ct = await prisma.user.count({
+      where: {
+        OR: [
+          {
+            fullName: {
+              contains: search,
+            },
+          },
+          { username: { contains: search } },
+        ],
+        NOT: {
+          id: {
+            in: [me.id],
+          },
+        },
+      },
+    });
+
+    const users = await prisma.user.findMany({
+      skip: parseInt(offset),
+      take: parseInt(limit),
+      where: {
+        OR: [
+          {
+            fullName: {
+              contains: search,
+            },
+          },
+          { username: { contains: search } },
+        ],
+        NOT: {
+          id: {
+            in: [me.id],
+          },
+        },
+      },
+      orderBy: {
+        id: "desc",
+      },
+    });
+
+    return reply.code(200).send({
+      ct,
+      data: users,
+    });
+  } catch (error) {
+    return reply.code(500).send({ message: `Server error!` });
+  }
+}
+
+export async function clearExploreCache() {
+  try {
+    await RedisClearKeyByPattern("*:explore");
+  } catch (error) {
+    logger.error("There was an error clearing explorer cache");
   }
 }
