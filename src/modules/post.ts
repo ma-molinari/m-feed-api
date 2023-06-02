@@ -20,7 +20,7 @@ interface GetPostProps {
 }
 
 interface CreatePostProps {
-  Body: Pick<Post, "userId" | "content" | "image">;
+  Body: Pick<Post, "content" | "image">;
 }
 
 export async function createPost(
@@ -28,11 +28,9 @@ export async function createPost(
   reply: FastifyReply
 ) {
   try {
-    const { userId, image, content } = request.body;
-
-    if (!userId) {
-      return reply.code(400).send({ message: `UserID is required.` });
-    }
+    const { authorization } = request.headers;
+    const { image, content } = request.body;
+    const me = await session(authorization);
 
     if (!image) {
       return reply.code(400).send({ message: `Image is required.` });
@@ -40,14 +38,14 @@ export async function createPost(
 
     await prisma.post.create({
       data: {
-        userId,
+        userId: me.id,
         image,
         content,
       },
     });
 
     await invalidateExploreCache();
-    await invalidateUserCache(userId);
+    await invalidateUserCache(me.id);
 
     return reply.code(201).send({ message: "ok" });
   } catch (error) {

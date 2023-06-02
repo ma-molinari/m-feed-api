@@ -81,7 +81,11 @@ export async function getUser(
         bio: true,
         email: true,
         createdAt: true,
-        posts: true,
+        posts: {
+          orderBy: {
+            id: "desc",
+          },
+        },
       },
       where: {
         id: parseInt(id) || 0,
