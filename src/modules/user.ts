@@ -2,9 +2,17 @@ import { compare, hash } from "bcryptjs";
 import prisma from "@libs/prisma";
 import { User } from "@prisma/client";
 import session from "@utils/session";
-import { RedisGetList, RedisAddList, RedisRemoveFromList } from "@libs/redis";
+import {
+  RedisGetList,
+  RedisAddList,
+  RedisRemoveFromList,
+  RedisGetJson,
+  RedisSetTTL,
+} from "@libs/redis";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { invalidateExploreCache } from "./post";
+import logger from "@libs/logger";
+import { RedisClearKey } from "@libs/redis";
 
 interface UpdateUserProps {
   Body: Pick<User, "email" | "username" | "fullName" | "avatar" | "bio">;
@@ -27,6 +35,12 @@ interface PaginationProps<T = {}> {
 
 interface SearchProps extends PaginationProps<{ search: string }> {}
 
+interface GetUserProps {
+  Params: {
+    id: string;
+  };
+}
+
 export async function me(request: FastifyRequest, reply: FastifyReply) {
   try {
     const { authorization } = request.headers;
@@ -36,6 +50,53 @@ export async function me(request: FastifyRequest, reply: FastifyReply) {
     return reply.code(200).send({
       data: user,
     });
+  } catch (error) {
+    return reply.code(500).send({ message: `Server error!` });
+  }
+}
+
+export async function getUser(
+  request: FastifyRequest<GetUserProps>,
+  reply: FastifyReply
+) {
+  try {
+    const { id } = request.params;
+
+    if (!id) {
+      return reply.code(400).send({ message: `ID is required.` });
+    }
+
+    const cacheKey = "user:" + id + ":profile";
+    const cachedPost = await RedisGetJson(cacheKey);
+    if (cachedPost) {
+      return cachedPost;
+    }
+
+    const user = await prisma.user.findUnique({
+      select: {
+        id: true,
+        avatar: true,
+        username: true,
+        fullName: true,
+        bio: true,
+        email: true,
+        createdAt: true,
+        posts: true,
+      },
+      where: {
+        id: parseInt(id) || 0,
+      },
+    });
+
+    if (!user) {
+      return reply.code(404).send({ message: `Not found.` });
+    }
+
+    const response = { data: user };
+
+    await RedisSetTTL(cacheKey, response, 86400); // 1 day in seconds.
+
+    return reply.code(200).send(response);
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
   }
@@ -71,6 +132,8 @@ export async function updateProfile(
         id: me.id,
       },
     });
+
+    await invalidateUserCache(me.id);
 
     return reply.code(200).send({
       data: {
@@ -259,4 +322,12 @@ export async function followerIds(userId: number): Promise<number[]> {
 export async function followingIds(userId: number): Promise<number[]> {
   const userIds = await RedisGetList("user:" + userId + ":following");
   return userIds.map((i) => parseInt(i));
+}
+
+export async function invalidateUserCache(id: number) {
+  try {
+    await RedisClearKey("user:" + id + ":profile");
+  } catch (error) {
+    logger.error("There was an error clearing explorer cache.");
+  }
 }

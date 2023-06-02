@@ -2,7 +2,7 @@ import prisma from "@libs/prisma";
 import session from "@utils/session";
 import { FastifyReply, FastifyRequest } from "fastify";
 import { RedisClearKeyByPattern, RedisGetJson, RedisSetTTL } from "@libs/redis";
-import { followingIds } from "./user";
+import { followingIds, invalidateUserCache } from "./user";
 import logger from "@libs/logger";
 import { Post } from "@prisma/client";
 
@@ -47,6 +47,7 @@ export async function createPost(
     });
 
     await invalidateExploreCache();
+    await invalidateUserCache(userId);
 
     return reply.code(201).send({ message: "ok" });
   } catch (error) {
@@ -84,14 +85,12 @@ export async function getPost(
         },
       },
       where: {
-        id: parseInt(id),
+        id: parseInt(id) || 0,
       },
     });
 
     if (!post) {
-      return reply.code(404).send({
-        message: `Not found.`,
-      });
+      return reply.code(404).send({ message: `Not found.` });
     }
 
     const response = {

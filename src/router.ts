@@ -3,6 +3,7 @@ import { FastifyInstance } from "fastify";
 import { login, register } from "@modules/auth";
 import {
   follow,
+  getUser,
   me,
   search,
   unfollow,
@@ -24,6 +25,7 @@ export async function privateRouter(fastify: FastifyInstance) {
    * User Routes
    */
   fastify.get("/users/me", me);
+  fastify.get("/users/:id", getUser);
   fastify.put("/users/profile", updateProfile);
   fastify.patch("/users/password", updatePassword);
   fastify.get("/users/search", search);
