@@ -4,7 +4,7 @@ import { User } from "@prisma/client";
 import session from "@utils/session";
 import { RedisGetList, RedisAddList, RedisRemoveFromList } from "@libs/redis";
 import { FastifyReply, FastifyRequest } from "fastify";
-import { clearExploreCache } from "./post";
+import { invalidateExploreCache } from "./post";
 
 interface UpdateUserProps {
   Body: Pick<User, "email" | "username" | "fullName" | "avatar" | "bio">;
@@ -179,7 +179,7 @@ export async function unfollow(
 export async function followUser(meId: number, userId: number): Promise<void> {
   await RedisAddList("user:" + meId + ":following", [Date.now(), userId]);
   await RedisAddList("user:" + userId + ":followers", [Date.now(), meId]);
-  await clearExploreCache();
+  await invalidateExploreCache();
 }
 
 export async function unfollowUser(
@@ -188,7 +188,7 @@ export async function unfollowUser(
 ): Promise<void> {
   await RedisRemoveFromList("user:" + meId + ":following", userId);
   await RedisRemoveFromList("user:" + userId + ":followers", meId);
-  await clearExploreCache();
+  await invalidateExploreCache();
 }
 
 export async function followerIds(userId: number): Promise<number[]> {

@@ -1,7 +1,12 @@
 import prisma from "@libs/prisma";
 import session from "@utils/session";
 import { FastifyReply, FastifyRequest } from "fastify";
-import { RedisClearKeyByPattern, RedisGetJson, RedisSetTTL } from "@libs/redis";
+import {
+  RedisClearKeyByPattern,
+  RedisGetJson,
+  RedisSetStr,
+  RedisSetTTL,
+} from "@libs/redis";
 import { followingIds } from "./user";
 import logger from "@libs/logger";
 
@@ -13,6 +18,12 @@ interface PaginationProps<T = {}> {
 }
 
 interface SearchProps extends PaginationProps<{ search: string }> {}
+
+interface GetPostProps {
+  Params: {
+    id: string;
+  };
+}
 
 export async function feed(
   request: FastifyRequest<PaginationProps>,
@@ -34,7 +45,14 @@ export async function feed(
       skip: parseInt(offset),
       take: parseInt(limit),
       include: {
-        user: true,
+        user: {
+          select: {
+            id: true,
+            username: true,
+            fullName: true,
+            avatar: true,
+          },
+        },
       },
       where: {
         userId: { in: [...followedUsersIds, me.id] },
@@ -60,12 +78,16 @@ export async function explore(
   try {
     const { authorization } = request.headers;
     const { limit = "10", offset = "0" } = request.query;
+    const isFirstPage = offset === "0";
+
     const me = await session(authorization);
     const followedUsersIds = await followingIds(me.id);
 
-    const cachedPosts = await RedisGetJson("user:" + me.id + ":explore");
-    if (cachedPosts) {
-      return cachedPosts;
+    if (isFirstPage) {
+      const cachedPosts = await RedisGetJson("user:" + me.id + ":explore");
+      if (cachedPosts) {
+        return cachedPosts;
+      }
     }
 
     const ct = await prisma.post.count({
@@ -78,7 +100,14 @@ export async function explore(
       skip: parseInt(offset),
       take: parseInt(limit),
       include: {
-        user: true,
+        user: {
+          select: {
+            id: true,
+            username: true,
+            fullName: true,
+            avatar: true,
+          },
+        },
       },
       where: {
         userId: { notIn: [...followedUsersIds, me.id] },
@@ -88,10 +117,12 @@ export async function explore(
       },
     });
 
-    await RedisSetTTL("user:" + me.id + ":explore", {
-      ct,
-      data: posts,
-    });
+    if (isFirstPage) {
+      await RedisSetTTL("user:" + me.id + ":explore", {
+        ct,
+        data: posts,
+      });
+    }
 
     return reply.code(200).send({
       ct,
@@ -132,6 +163,12 @@ export async function search(
     const users = await prisma.user.findMany({
       skip: parseInt(offset),
       take: parseInt(limit),
+      select: {
+        id: true,
+        username: true,
+        fullName: true,
+        avatar: true,
+      },
       where: {
         OR: [
           {
@@ -161,10 +198,65 @@ export async function search(
   }
 }
 
-export async function clearExploreCache() {
+export async function getPost(
+  request: FastifyRequest<GetPostProps>,
+  reply: FastifyReply
+) {
+  try {
+    const { id } = request.params;
+
+    if (!id) {
+      return reply.code(400).send({
+        message: `ID is required.`,
+      });
+    }
+
+    const cachedPost = await RedisGetJson("post:" + id + ":detail");
+    if (cachedPost) {
+      return cachedPost;
+    }
+
+    const post = await prisma.post.findUnique({
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            fullName: true,
+            avatar: true,
+          },
+        },
+      },
+      where: {
+        id: parseInt(id),
+      },
+    });
+
+    if (!post) {
+      return reply.code(404).send({
+        message: `Not found.`,
+      });
+    }
+
+    await RedisSetStr(
+      "post:" + id + ":detail",
+      JSON.stringify({
+        data: post,
+      })
+    );
+
+    return reply.code(200).send({
+      data: post,
+    });
+  } catch (error) {
+    return reply.code(500).send({ message: `Server error!` });
+  }
+}
+
+export async function invalidateExploreCache() {
   try {
     await RedisClearKeyByPattern("*:explore");
   } catch (error) {
-    logger.error("There was an error clearing explorer cache");
+    logger.error("There was an error clearing explorer cache.");
   }
 }

@@ -8,7 +8,7 @@ import {
   updatePassword,
   updateProfile,
 } from "@modules/user";
-import { explore, feed, search } from "@modules/post";
+import { explore, feed, getPost, search } from "@modules/post";
 
 export async function publicRouter(fastify: FastifyInstance) {
   /**
@@ -34,5 +34,5 @@ export async function privateRouter(fastify: FastifyInstance) {
   fastify.get("/feed", feed);
   fastify.get("/explore", explore);
   fastify.get("/search", search);
-  fastify.get("/p/:id", explore);
+  fastify.get("/p/:id", getPost);
 }
