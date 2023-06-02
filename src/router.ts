@@ -4,11 +4,12 @@ import { login, register } from "@modules/auth";
 import {
   follow,
   me,
+  search,
   unfollow,
   updatePassword,
   updateProfile,
 } from "@modules/user";
-import { explore, feed, getPost, search } from "@modules/post";
+import { createPost, explore, feed, getPost } from "@modules/post";
 
 export async function publicRouter(fastify: FastifyInstance) {
   /**
@@ -25,14 +26,15 @@ export async function privateRouter(fastify: FastifyInstance) {
   fastify.get("/users/me", me);
   fastify.put("/users/profile", updateProfile);
   fastify.patch("/users/password", updatePassword);
+  fastify.get("/users/search", search);
   fastify.post("/users/follow", follow);
   fastify.post("/users/unfollow", unfollow);
 
   /**
    * Post Routes
    */
-  fastify.get("/feed", feed);
-  fastify.get("/explore", explore);
-  fastify.get("/search", search);
-  fastify.get("/p/:id", getPost);
+  fastify.post("/posts", createPost);
+  fastify.get("/posts/:id", getPost);
+  fastify.get("/posts/feed", feed);
+  fastify.get("/posts/explore", explore);
 }

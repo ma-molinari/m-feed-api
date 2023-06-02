@@ -18,6 +18,15 @@ interface FollowProps {
   Body: { userId: number };
 }
 
+interface PaginationProps<T = {}> {
+  Querystring: {
+    limit: string;
+    offset: string;
+  } & T;
+}
+
+interface SearchProps extends PaginationProps<{ search: string }> {}
+
 export async function me(request: FastifyRequest, reply: FastifyReply) {
   try {
     const { authorization } = request.headers;
@@ -113,6 +122,57 @@ export async function updatePassword(
     });
 
     return reply.code(200).send({ message: "ok" });
+  } catch (error) {
+    return reply.code(500).send({ message: `Server error!` });
+  }
+}
+
+export async function search(
+  request: FastifyRequest<SearchProps>,
+  reply: FastifyReply
+) {
+  try {
+    const { authorization } = request.headers;
+    const { limit = "10", offset = "0", search = "" } = request.query;
+    const me = await session(authorization);
+
+    const where = {
+      OR: [
+        {
+          fullName: {
+            contains: search,
+          },
+        },
+        { username: { contains: search } },
+      ],
+      NOT: {
+        id: {
+          in: [me.id],
+        },
+      },
+    };
+
+    const ct = await prisma.user.count({ where });
+
+    const users = await prisma.user.findMany({
+      skip: parseInt(offset),
+      take: parseInt(limit),
+      select: {
+        id: true,
+        username: true,
+        fullName: true,
+        avatar: true,
+      },
+      where,
+      orderBy: {
+        id: "desc",
+      },
+    });
+
+    return reply.code(200).send({
+      ct,
+      data: users,
+    });
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
   }
