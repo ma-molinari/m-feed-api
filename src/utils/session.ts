@@ -1,5 +1,4 @@
 import prisma from "@libs/prisma";
-import { RedisGetJson } from "@libs/redis";
 import { Post, User } from "@prisma/client";
 import { verify } from "jsonwebtoken";
 
@@ -20,11 +19,6 @@ export default async function session(
 
     if (!decoded) {
       return null;
-    }
-
-    const cachedPost = await RedisGetJson("user:" + decoded.id + ":profile");
-    if (cachedPost) {
-      return cachedPost as UserProps;
     }
 
     const user = await prisma.user.findUnique({
