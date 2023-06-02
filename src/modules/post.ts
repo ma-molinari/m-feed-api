@@ -1,12 +1,7 @@
 import prisma from "@libs/prisma";
 import session from "@utils/session";
 import { FastifyReply, FastifyRequest } from "fastify";
-import {
-  RedisClearKeyByPattern,
-  RedisGetJson,
-  RedisSetStr,
-  RedisSetTTL,
-} from "@libs/redis";
+import { RedisClearKeyByPattern, RedisGetJson, RedisSetTTL } from "@libs/redis";
 import { followingIds } from "./user";
 import logger from "@libs/logger";
 
@@ -83,8 +78,9 @@ export async function explore(
     const me = await session(authorization);
     const followedUsersIds = await followingIds(me.id);
 
+    const cacheKey = "user:" + me.id + ":explore";
     if (isFirstPage) {
-      const cachedPosts = await RedisGetJson("user:" + me.id + ":explore");
+      const cachedPosts = await RedisGetJson(cacheKey);
       if (cachedPosts) {
         return cachedPosts;
       }
@@ -118,10 +114,14 @@ export async function explore(
     });
 
     if (isFirstPage) {
-      await RedisSetTTL("user:" + me.id + ":explore", {
-        ct,
-        data: posts,
-      });
+      await RedisSetTTL(
+        cacheKey,
+        {
+          ct,
+          data: posts,
+        },
+        3600
+      );
     }
 
     return reply.code(200).send({
@@ -211,7 +211,8 @@ export async function getPost(
       });
     }
 
-    const cachedPost = await RedisGetJson("post:" + id + ":detail");
+    const cacheKey = "post:" + id + ":detail";
+    const cachedPost = await RedisGetJson(cacheKey);
     if (cachedPost) {
       return cachedPost;
     }
@@ -238,16 +239,13 @@ export async function getPost(
       });
     }
 
-    await RedisSetStr(
-      "post:" + id + ":detail",
-      JSON.stringify({
-        data: post,
-      })
-    );
-
-    return reply.code(200).send({
+    const response = {
       data: post,
-    });
+    };
+
+    await RedisSetTTL(cacheKey, response, 86400); // 1 day in seconds.
+
+    return reply.code(200).send(response);
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
   }
