@@ -1,6 +1,6 @@
-export function paginationProps(limit: string, start: string) {
+export function paginationProps(limit: string, page: string) {
   const take = parseInt(limit) || 0;
-  const skip = (parseInt(start) || 0) * take;
+  const skip = (parseInt(page) || 0) * take;
 
   return {
     take,

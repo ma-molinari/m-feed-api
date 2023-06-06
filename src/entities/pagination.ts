@@ -1,7 +1,7 @@
 interface PaginationProps<T = {}> {
   Querystring: {
     limit: string;
-    start: string;
+    page: string;
   } & T;
 }
 

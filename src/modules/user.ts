@@ -202,7 +202,7 @@ export async function search(
     const ct = await prisma.user.count({ where });
 
     const users = await prisma.user.findMany({
-      take: parseInt(limit),
+      take: parseInt(limit) || 0,
       select: {
         id: true,
         username: true,

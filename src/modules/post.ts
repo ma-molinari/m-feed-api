@@ -203,8 +203,8 @@ export async function feed(
 ) {
   try {
     const { authorization } = request.headers;
-    const { limit = "10", start = "0" } = request.query;
-    const { skip, take } = paginationProps(limit, start);
+    const { limit = "10", page = "0" } = request.query;
+    const { take, skip } = paginationProps(limit, page);
 
     const me = await session(authorization);
     const followedUsersIds = await followingIds(me.id);
@@ -216,8 +216,8 @@ export async function feed(
     });
 
     const posts = await prisma.post.findMany({
-      skip,
       take,
+      skip,
       include: {
         user: {
           select: {
@@ -251,10 +251,10 @@ export async function explore(
 ) {
   try {
     const { authorization } = request.headers;
-    const { limit = "10", start = "0" } = request.query;
-    const { skip, take } = paginationProps(limit, start);
+    const { limit = "10", page = "0" } = request.query;
+    const { take, skip } = paginationProps(limit, page);
 
-    const isFirstPage = start === "0";
+    const isFirstPage = page === "0";
 
     const me = await session(authorization);
     const followedUsersIds = await followingIds(me.id);
@@ -274,8 +274,8 @@ export async function explore(
     });
 
     const posts = await prisma.post.findMany({
-      skip,
       take,
+      skip,
       include: {
         user: {
           select: {
