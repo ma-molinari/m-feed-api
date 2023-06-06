@@ -311,6 +311,6 @@ export async function invalidateUserCache(id: number) {
   try {
     await RedisClearKey("user:" + id + ":profile");
   } catch (error) {
-    logger.error("There was an error clearing explorer cache.");
+    logger.error("There was an error clearing user cache.");
   }
 }

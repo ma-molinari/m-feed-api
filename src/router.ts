@@ -10,7 +10,7 @@ import {
   updatePassword,
   updateProfile,
 } from "@modules/user";
-import { createPost, explore, feed, getPost } from "@modules/post";
+import { createPost, explore, feed, getPost, updatePost } from "@modules/post";
 
 export async function publicRouter(fastify: FastifyInstance) {
   /**
@@ -36,6 +36,7 @@ export async function privateRouter(fastify: FastifyInstance) {
    * Post Routes
    */
   fastify.post("/posts", createPost);
+  fastify.put("/posts/:id", updatePost);
   fastify.get("/posts/:id", getPost);
   fastify.get("/posts/feed", feed);
   fastify.get("/posts/explore", explore);

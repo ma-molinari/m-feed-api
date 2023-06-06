@@ -1,7 +1,12 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import prisma from "@libs/prisma";
 import logger from "@libs/logger";
-import { RedisClearKeyByPattern, RedisGetJson, RedisSetTTL } from "@libs/redis";
+import {
+  RedisClearKey,
+  RedisClearKeyByPattern,
+  RedisGetJson,
+  RedisSetTTL,
+} from "@libs/redis";
 import session from "@utils/session";
 import { CreatePostProps, GetPostProps } from "@entities/post";
 import { paginationProps } from "@modules/pagination";
@@ -82,6 +87,59 @@ export async function getPost(
     await RedisSetTTL(cacheKey, response, 86400); // 1 day in seconds.
 
     return reply.code(200).send(response);
+  } catch (error) {
+    return reply.code(500).send({ message: `Server error!` });
+  }
+}
+
+export async function updatePost(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { authorization } = request.headers;
+    const { id }: any = request.params;
+    const { content }: any = request.body;
+    const me = await session(authorization);
+
+    if (!id) {
+      return reply.code(400).send({ message: `ID is required.` });
+    }
+
+    if (!content) {
+      return reply.code(400).send({ message: `Content is required.` });
+    }
+
+    const post = await prisma.post.findUnique({
+      select: {
+        id: true,
+        content: true,
+        userId: true,
+      },
+      where: {
+        id: parseInt(id) || 0,
+      },
+    });
+
+    if (!post) {
+      return reply.code(404).send({ message: `Not found.` });
+    }
+
+    if (post.userId !== me.id) {
+      return reply
+        .code(403)
+        .send({ message: `Unable to update another user's post.` });
+    }
+
+    await prisma.post.update({
+      data: { content },
+      where: {
+        id: post.id,
+      },
+    });
+
+    await invalidateExploreCache();
+    await invalidateUserCache(me.id);
+    await invalidatePostCache(post.id);
+
+    return reply.code(201).send({ message: "ok" });
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
   }
@@ -201,6 +259,14 @@ export async function explore(
     });
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
+  }
+}
+
+export async function invalidatePostCache(postId: number) {
+  try {
+    await RedisClearKey("post:" + postId + ":detail");
+  } catch (error) {
+    logger.error("There was an error clearing post cache.");
   }
 }
 
