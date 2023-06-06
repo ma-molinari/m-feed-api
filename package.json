@@ -45,6 +45,7 @@
   },
   "_moduleAliases": {
     "@modules": "build/modules",
+    "@entities": "build/entities",
     "@libs": "build/libs",
     "@middlewares": "build/middlewares",
     "@utils": "build/utils"

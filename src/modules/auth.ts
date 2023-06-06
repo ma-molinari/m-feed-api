@@ -1,16 +1,8 @@
-import { sign } from "jsonwebtoken";
-import { compare, hash } from "bcryptjs";
-import prisma from "@libs/prisma";
-import { User } from "@prisma/client";
 import { FastifyReply, FastifyRequest } from "fastify";
-
-interface LoginProps {
-  Body: Pick<User, "email" | "password">;
-}
-
-interface RegisterProps {
-  Body: Pick<User, "email" | "username" | "fullName" | "password">;
-}
+import { compare, hash } from "bcryptjs";
+import { sign } from "jsonwebtoken";
+import prisma from "@libs/prisma";
+import { LoginProps, RegisterProps } from "@entities/auth";
 
 export async function login(
   request: FastifyRequest<LoginProps>,

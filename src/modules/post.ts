@@ -1,27 +1,12 @@
-import prisma from "@libs/prisma";
-import session from "@utils/session";
 import { FastifyReply, FastifyRequest } from "fastify";
-import { RedisClearKeyByPattern, RedisGetJson, RedisSetTTL } from "@libs/redis";
-import { followingIds, invalidateUserCache } from "./user";
+import prisma from "@libs/prisma";
 import logger from "@libs/logger";
-import { Post } from "@prisma/client";
-
-interface PaginationProps<T = {}> {
-  Querystring: {
-    limit: string;
-    offset: string;
-  } & T;
-}
-
-interface GetPostProps {
-  Params: {
-    id: string;
-  };
-}
-
-interface CreatePostProps {
-  Body: Pick<Post, "content" | "image">;
-}
+import { RedisClearKeyByPattern, RedisGetJson, RedisSetTTL } from "@libs/redis";
+import session from "@utils/session";
+import { CreatePostProps, GetPostProps } from "@entities/post";
+import { paginationProps } from "@modules/pagination";
+import { followingIds, invalidateUserCache } from "./user";
+import { PaginationProps } from "@entities/pagination";
 
 export async function createPost(
   request: FastifyRequest<CreatePostProps>,
@@ -49,7 +34,6 @@ export async function createPost(
 
     return reply.code(201).send({ message: "ok" });
   } catch (error) {
-    console.log(error.message);
     return reply.code(500).send({ message: `Server error!` });
   }
 }
@@ -109,7 +93,9 @@ export async function feed(
 ) {
   try {
     const { authorization } = request.headers;
-    const { limit = "10", offset = "0" } = request.query;
+    const { limit = "10", start = "0" } = request.query;
+    const { skip, take } = paginationProps(limit, start);
+
     const me = await session(authorization);
     const followedUsersIds = await followingIds(me.id);
 
@@ -120,8 +106,8 @@ export async function feed(
     });
 
     const posts = await prisma.post.findMany({
-      skip: parseInt(offset),
-      take: parseInt(limit),
+      skip,
+      take,
       include: {
         user: {
           select: {
@@ -155,8 +141,10 @@ export async function explore(
 ) {
   try {
     const { authorization } = request.headers;
-    const { limit = "10", offset = "0" } = request.query;
-    const isFirstPage = offset === "0";
+    const { limit = "10", start = "0" } = request.query;
+    const { skip, take } = paginationProps(limit, start);
+
+    const isFirstPage = start === "0";
 
     const me = await session(authorization);
     const followedUsersIds = await followingIds(me.id);
@@ -176,8 +164,8 @@ export async function explore(
     });
 
     const posts = await prisma.post.findMany({
-      skip: parseInt(offset),
-      take: parseInt(limit),
+      skip,
+      take,
       include: {
         user: {
           select: {

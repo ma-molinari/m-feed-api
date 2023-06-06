@@ -1,6 +1,6 @@
+import { FastifyReply, FastifyRequest } from "fastify";
 import { compare, hash } from "bcryptjs";
 import prisma from "@libs/prisma";
-import { User } from "@prisma/client";
 import session from "@utils/session";
 import {
   RedisGetList,
@@ -9,37 +9,16 @@ import {
   RedisGetJson,
   RedisSetTTL,
 } from "@libs/redis";
-import { FastifyReply, FastifyRequest } from "fastify";
-import { invalidateExploreCache } from "./post";
 import logger from "@libs/logger";
 import { RedisClearKey } from "@libs/redis";
-
-interface UpdateUserProps {
-  Body: Pick<User, "email" | "username" | "fullName" | "avatar" | "bio">;
-}
-
-interface UpdatePasswordProps {
-  Body: Pick<User, "password"> & { newPassword: string };
-}
-
-interface FollowProps {
-  Body: { userId: number };
-}
-
-interface PaginationProps<T = {}> {
-  Querystring: {
-    limit: string;
-    offset: string;
-  } & T;
-}
-
-interface SearchProps extends PaginationProps<{ search: string }> {}
-
-interface GetUserProps {
-  Params: {
-    id: string;
-  };
-}
+import { invalidateExploreCache } from "@modules/post";
+import {
+  GetUserProps,
+  UpdateUserProps,
+  UpdatePasswordProps,
+  SearchUserProps,
+  FollowUserProps,
+} from "@entities/user";
 
 export async function me(request: FastifyRequest, reply: FastifyReply) {
   try {
@@ -195,22 +174,23 @@ export async function updatePassword(
 }
 
 export async function search(
-  request: FastifyRequest<SearchProps>,
+  request: FastifyRequest<SearchUserProps>,
   reply: FastifyReply
 ) {
   try {
     const { authorization } = request.headers;
-    const { limit = "10", offset = "0", search = "" } = request.query;
+    const { query = "", limit = "20" } = request.query;
+
     const me = await session(authorization);
 
     const where = {
       OR: [
         {
           fullName: {
-            contains: search,
+            contains: query,
           },
         },
-        { username: { contains: search } },
+        { username: { contains: query } },
       ],
       NOT: {
         id: {
@@ -222,7 +202,6 @@ export async function search(
     const ct = await prisma.user.count({ where });
 
     const users = await prisma.user.findMany({
-      skip: parseInt(offset),
       take: parseInt(limit),
       select: {
         id: true,
@@ -246,7 +225,7 @@ export async function search(
 }
 
 export async function follow(
-  request: FastifyRequest<FollowProps>,
+  request: FastifyRequest<FollowUserProps>,
   reply: FastifyReply
 ) {
   try {
@@ -278,7 +257,7 @@ export async function follow(
 }
 
 export async function unfollow(
-  request: FastifyRequest<FollowProps>,
+  request: FastifyRequest<FollowUserProps>,
   reply: FastifyReply
 ) {
   try {
