@@ -8,7 +8,7 @@ import {
   RedisSetTTL,
 } from "@libs/redis";
 import session from "@utils/session";
-import { CreatePostProps, GetPostProps } from "@entities/post";
+import { CreatePostProps, GetParamsID, UpdatePostProps } from "@entities/post";
 import { paginationProps } from "@modules/pagination";
 import { followingIds, invalidateUserCache } from "./user";
 import { PaginationProps } from "@entities/pagination";
@@ -44,7 +44,7 @@ export async function createPost(
 }
 
 export async function getPost(
-  request: FastifyRequest<GetPostProps>,
+  request: FastifyRequest<GetParamsID>,
   reply: FastifyReply
 ) {
   try {
@@ -92,11 +92,14 @@ export async function getPost(
   }
 }
 
-export async function updatePost(request: FastifyRequest, reply: FastifyReply) {
+export async function updatePost(
+  request: FastifyRequest<UpdatePostProps>,
+  reply: FastifyReply
+) {
   try {
     const { authorization } = request.headers;
-    const { id }: any = request.params;
-    const { content }: any = request.body;
+    const { id } = request.params;
+    const { content } = request.body;
     const me = await session(authorization);
 
     if (!id) {
@@ -139,7 +142,56 @@ export async function updatePost(request: FastifyRequest, reply: FastifyReply) {
     await invalidateUserCache(me.id);
     await invalidatePostCache(post.id);
 
-    return reply.code(201).send({ message: "ok" });
+    return reply.code(200).send({ message: "ok" });
+  } catch (error) {
+    return reply.code(500).send({ message: `Server error!` });
+  }
+}
+
+export async function deletePost(
+  request: FastifyRequest<GetParamsID>,
+  reply: FastifyReply
+) {
+  try {
+    const { authorization } = request.headers;
+    const { id } = request.params;
+    const me = await session(authorization);
+
+    if (!id) {
+      return reply.code(400).send({ message: `ID is required.` });
+    }
+
+    const post = await prisma.post.findUnique({
+      select: {
+        id: true,
+        userId: true,
+      },
+      where: {
+        id: parseInt(id) || 0,
+      },
+    });
+
+    if (!post) {
+      return reply.code(404).send({ message: `Not found.` });
+    }
+
+    if (post.userId !== me.id) {
+      return reply
+        .code(403)
+        .send({ message: `Unable to delete another user's post.` });
+    }
+
+    await prisma.post.delete({
+      where: {
+        id: post.id,
+      },
+    });
+
+    await invalidateExploreCache();
+    await invalidateUserCache(me.id);
+    await invalidatePostCache(post.id);
+
+    return reply.code(200).send({ message: "ok" });
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
   }

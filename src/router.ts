@@ -1,5 +1,4 @@
 import { FastifyInstance } from "fastify";
-
 import { login, register } from "@modules/auth";
 import {
   follow,
@@ -10,7 +9,14 @@ import {
   updatePassword,
   updateProfile,
 } from "@modules/user";
-import { createPost, explore, feed, getPost, updatePost } from "@modules/post";
+import {
+  createPost,
+  deletePost,
+  explore,
+  feed,
+  getPost,
+  updatePost,
+} from "@modules/post";
 
 export async function publicRouter(fastify: FastifyInstance) {
   /**
@@ -36,8 +42,9 @@ export async function privateRouter(fastify: FastifyInstance) {
    * Post Routes
    */
   fastify.post("/posts", createPost);
-  fastify.put("/posts/:id", updatePost);
   fastify.get("/posts/:id", getPost);
+  fastify.put("/posts/:id", updatePost);
+  fastify.delete("/posts/:id", deletePost);
   fastify.get("/posts/feed", feed);
   fastify.get("/posts/explore", explore);
 }

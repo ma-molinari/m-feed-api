@@ -1,6 +1,6 @@
 import { Post } from "@prisma/client";
 
-interface GetPostProps {
+interface GetParamsID {
   Params: {
     id: string;
   };
@@ -10,4 +10,8 @@ interface CreatePostProps {
   Body: Pick<Post, "content" | "image">;
 }
 
-export type { GetPostProps, CreatePostProps };
+interface UpdatePostProps extends GetParamsID {
+  Body: Pick<Post, "content">;
+}
+
+export type { GetParamsID, CreatePostProps, UpdatePostProps };
