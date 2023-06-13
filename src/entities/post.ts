@@ -14,4 +14,10 @@ interface UpdatePostProps extends GetParamsID {
   Body: Pick<Post, "content">;
 }
 
-export type { GetParamsID, CreatePostProps, UpdatePostProps };
+interface LikePostProps {
+  Body: {
+    postId: number;
+  };
+}
+
+export type { GetParamsID, CreatePostProps, UpdatePostProps, LikePostProps };

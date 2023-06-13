@@ -15,6 +15,9 @@ import {
   explore,
   feed,
   getPost,
+  getPostLikes,
+  likePost,
+  unlikePost,
   updatePost,
 } from "@modules/post";
 
@@ -43,8 +46,11 @@ export async function privateRouter(fastify: FastifyInstance) {
    */
   fastify.post("/posts", createPost);
   fastify.get("/posts/:id", getPost);
+  fastify.get("/posts/:id/likes", getPostLikes);
   fastify.put("/posts/:id", updatePost);
   fastify.delete("/posts/:id", deletePost);
   fastify.get("/posts/feed", feed);
   fastify.get("/posts/explore", explore);
+  fastify.post("/posts/like", likePost);
+  fastify.post("/posts/unlike", unlikePost);
 }

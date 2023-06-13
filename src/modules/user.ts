@@ -231,6 +231,7 @@ export async function follow(
   try {
     const { authorization } = request.headers;
     const { userId } = request.body;
+
     const me = await session(authorization);
     const followedUsersIds = await followingIds(me.id);
 
@@ -263,6 +264,7 @@ export async function unfollow(
   try {
     const { authorization } = request.headers;
     const { userId } = request.body;
+
     const me = await session(authorization);
     const followedUsersIds = await followingIds(me.id);
 
