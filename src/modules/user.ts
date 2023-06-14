@@ -232,12 +232,12 @@ export async function follow(
     const { authorization } = request.headers;
     const { userId } = request.body;
 
-    const me = await session(authorization);
-    const followedUsersIds = await followingIds(me.id);
-
     if (!userId) {
       return reply.code(400).send({ message: `UserID is required.` });
     }
+
+    const me = await session(authorization);
+    const followedUsersIds = await followingIds(me.id);
 
     if (me.id === userId) {
       return reply.code(400).send({ message: `Can't follow yourself.` });
@@ -249,7 +249,19 @@ export async function follow(
         .send({ message: `User has already been followed.` });
     }
 
-    await followUser(me.id, userId);
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user) {
+      return reply
+        .code(404)
+        .send({ message: `User with id equal ${userId} not found.` });
+    }
+
+    await followUser(me.id, user.id);
 
     return reply.code(200).send({ message: "OK" });
   } catch (error) {
