@@ -354,19 +354,34 @@ export async function likePost(
     const { authorization } = request.headers;
     const { postId } = request.body;
 
-    const me = await session(authorization);
-    const likedPostsIds = await userLikedPostsIds(me.id);
-
     if (!postId) {
       return reply.code(400).send({ message: `PostID is required.` });
     }
+
+    const me = await session(authorization);
+    const likedPostsIds = await userLikedPostsIds(me.id);
 
     if (likedPostsIds.includes(postId)) {
       return reply.code(400).send({ message: `Post has already been liked.` });
     }
 
-    await RedisAddList("user:" + me.id + ":post_likes", [Date.now(), postId]);
-    await RedisAddList("post:" + postId + ":likes", [Date.now(), me.id]);
+    const post = await prisma.post.findUnique({
+      select: {
+        id: true,
+      },
+      where: {
+        id: postId,
+      },
+    });
+
+    if (!post) {
+      return reply
+        .code(404)
+        .send({ message: `Post with id equal ${postId} not found.` });
+    }
+
+    await RedisAddList("user:" + me.id + ":post_likes", [Date.now(), post.id]);
+    await RedisAddList("post:" + post.id + ":likes", [Date.now(), me.id]);
 
     return reply.code(200).send({ message: "OK" });
   } catch (error) {

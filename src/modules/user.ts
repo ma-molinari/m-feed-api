@@ -250,6 +250,9 @@ export async function follow(
     }
 
     const user = await prisma.user.findUnique({
+      select: {
+        id: true,
+      },
       where: {
         id: userId,
       },
