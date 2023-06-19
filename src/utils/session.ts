@@ -1,14 +1,8 @@
 import prisma from "@libs/prisma";
-import { Post, User } from "@prisma/client";
+import { User } from "@prisma/client";
 import { verify } from "jsonwebtoken";
 
-interface UserProps extends User {
-  posts: Post[];
-}
-
-export default async function session(
-  authorization: string
-): Promise<UserProps> {
+export default async function session(authorization: string): Promise<User> {
   try {
     if (!authorization) {
       return null;
@@ -22,15 +16,6 @@ export default async function session(
     }
 
     const user = await prisma.user.findUnique({
-      select: {
-        id: true,
-        avatar: true,
-        fullName: true,
-        username: true,
-        email: true,
-        bio: true,
-        posts: true,
-      },
       where: {
         id: parseInt(decoded.id),
       },
@@ -40,7 +25,8 @@ export default async function session(
       return null;
     }
 
-    return user as UserProps;
+    delete user.password;
+    return user;
   } catch (error) {
     return null;
   }

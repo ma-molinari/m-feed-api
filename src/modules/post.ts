@@ -326,21 +326,16 @@ export async function explore(
       },
     });
 
-    if (isFirstPage) {
-      await RedisSetTTL(
-        cacheKey,
-        {
-          ct,
-          data: posts,
-        },
-        3600
-      );
-    }
-
-    return reply.code(200).send({
+    const response = {
       ct,
       data: posts,
-    });
+    };
+
+    if (isFirstPage) {
+      await RedisSetTTL(cacheKey, response, 3600);
+    }
+
+    return reply.code(200).send(response);
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
   }

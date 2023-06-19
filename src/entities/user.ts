@@ -1,4 +1,5 @@
 import { User } from "@prisma/client";
+import { PaginationProps } from "./pagination";
 
 interface UpdateUserProps {
   Body: Pick<User, "email" | "username" | "fullName" | "avatar" | "bio">;
@@ -20,6 +21,12 @@ interface GetUserProps {
   };
 }
 
+interface GetUserPostsProps extends PaginationProps {
+  Params: {
+    id: string;
+  };
+}
+
 interface SearchUserProps {
   Querystring: {
     limit: string;
@@ -32,5 +39,6 @@ export type {
   UpdatePasswordProps,
   FollowUserProps,
   GetUserProps,
+  GetUserPostsProps,
   SearchUserProps,
 };
