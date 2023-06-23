@@ -21,15 +21,22 @@ import {
   GetUserPostsProps,
 } from "@entities/user";
 import { paginationProps } from "./pagination";
+import { User } from "@prisma/client";
 
 export async function me(request: FastifyRequest, reply: FastifyReply) {
   try {
     const { authorization } = request.headers;
 
     const user = await session(authorization);
+    const followers = (await followerIds(user.id)) ?? [];
+    const following = (await followingIds(user.id)) ?? [];
 
     return reply.code(200).send({
-      data: user,
+      data: {
+        ...user,
+        followers: followers.length,
+        following: following.length,
+      },
     });
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
@@ -48,9 +55,19 @@ export async function getUser(
     }
 
     const cacheKey = "user:" + id + ":profile";
-    const cachedPost = await RedisGetJson(cacheKey);
+    const cachedPost = await RedisGetJson<{ data: User }>(cacheKey);
+
+    const followers = (await followerIds(id)) ?? [];
+    const following = (await followingIds(id)) ?? [];
+
     if (cachedPost) {
-      return cachedPost;
+      return {
+        data: {
+          ...cachedPost.data,
+          followers: followers.length,
+          following: following.length,
+        },
+      };
     }
 
     const user = await prisma.user.findUnique({
@@ -76,7 +93,13 @@ export async function getUser(
 
     await RedisSetTTL(cacheKey, response, 86400); // 1 day in seconds.
 
-    return reply.code(200).send(response);
+    return reply.code(200).send({
+      data: {
+        ...response.data,
+        followers: followers.length,
+        following: following.length,
+      },
+    });
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
   }
@@ -381,12 +404,12 @@ export async function unfollowUser(
   await invalidateExploreCache();
 }
 
-export async function followerIds(userId: number): Promise<number[]> {
+export async function followerIds(userId: number | string): Promise<number[]> {
   const userIds = await RedisGetList("user:" + userId + ":followers");
   return userIds.map((i) => parseInt(i));
 }
 
-export async function followingIds(userId: number): Promise<number[]> {
+export async function followingIds(userId: number | string): Promise<number[]> {
   const userIds = await RedisGetList("user:" + userId + ":following");
   return userIds.map((i) => parseInt(i));
 }
