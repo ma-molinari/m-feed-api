@@ -175,6 +175,108 @@ export async function getUserPosts(
   }
 }
 
+export async function getUserFollowers(
+  request: FastifyRequest<GetUserPostsProps>,
+  reply: FastifyReply
+) {
+  try {
+    const { id } = request.params;
+    const { limit = "10", page = "0" } = request.query;
+    const { take, skip } = paginationProps(limit, page);
+
+    if (!id) {
+      return reply.code(400).send({ message: `ID is required.` });
+    }
+
+    const usersIds = await followerIds(id);
+
+    const ct = await prisma.user.count({
+      where: {
+        id: {
+          in: usersIds,
+        },
+      },
+    });
+
+    const users = await prisma.user.findMany({
+      take,
+      skip,
+      select: {
+        id: true,
+        avatar: true,
+        username: true,
+        fullName: true,
+        bio: true,
+        email: true,
+        createdAt: true,
+      },
+      where: {
+        id: {
+          in: usersIds,
+        },
+      },
+    });
+
+    return {
+      ct,
+      data: users,
+    };
+  } catch (error) {
+    return reply.code(500).send({ message: `Server error!` });
+  }
+}
+
+export async function getUserFollowings(
+  request: FastifyRequest<GetUserPostsProps>,
+  reply: FastifyReply
+) {
+  try {
+    const { id } = request.params;
+    const { limit = "10", page = "0" } = request.query;
+    const { take, skip } = paginationProps(limit, page);
+
+    if (!id) {
+      return reply.code(400).send({ message: `ID is required.` });
+    }
+
+    const usersIds = await followingIds(id);
+
+    const ct = await prisma.user.count({
+      where: {
+        id: {
+          in: usersIds,
+        },
+      },
+    });
+
+    const users = await prisma.user.findMany({
+      take,
+      skip,
+      select: {
+        id: true,
+        avatar: true,
+        username: true,
+        fullName: true,
+        bio: true,
+        email: true,
+        createdAt: true,
+      },
+      where: {
+        id: {
+          in: usersIds,
+        },
+      },
+    });
+
+    return {
+      ct,
+      data: users,
+    };
+  } catch (error) {
+    return reply.code(500).send({ message: `Server error!` });
+  }
+}
+
 export async function updateProfile(
   request: FastifyRequest<UpdateUserProps>,
   reply: FastifyReply
