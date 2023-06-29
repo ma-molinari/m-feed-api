@@ -1,7 +1,9 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import prisma from "@libs/prisma";
 import session from "@utils/session";
-import { CreateCommentProps } from "@entities/comment";
+import { CreateCommentProps, GetParamsID } from "@entities/comment";
+import { PaginationProps } from "@entities/pagination";
+import { paginationProps } from "./pagination";
 
 export async function createComment(
   request: FastifyRequest<CreateCommentProps>,
@@ -49,4 +51,64 @@ export async function createComment(
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
   }
+}
+
+export async function getComments(
+  request: FastifyRequest<PaginationProps<GetParamsID>>,
+  reply: FastifyReply
+) {
+  const { postId } = request.params;
+  const { limit = "10", page = "0" } = request.query;
+  const { take, skip } = paginationProps(limit, page);
+
+  if (!postId) {
+    return reply.code(400).send({ message: `PostID is required.` });
+  }
+
+  const post = await prisma.post.findUnique({
+    select: {
+      id: true,
+    },
+    where: {
+      id: parseInt(postId) || 0,
+    },
+  });
+
+  if (!post) {
+    return reply
+      .code(404)
+      .send({ message: `Post with id equal ${postId} not found.` });
+  }
+
+  const ct = await prisma.comment.count({
+    where: {
+      postId: post.id,
+    },
+  });
+
+  const comments = await prisma.comment.findMany({
+    take,
+    skip,
+    include: {
+      user: {
+        select: {
+          id: true,
+          username: true,
+          fullName: true,
+          avatar: true,
+        },
+      },
+    },
+    where: {
+      postId: post.id,
+    },
+    orderBy: {
+      id: "desc",
+    },
+  });
+
+  return reply.code(200).send({
+    ct,
+    data: comments,
+  });
 }

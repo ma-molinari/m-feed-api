@@ -10,4 +10,4 @@ interface CreateCommentProps extends GetParamsID {
   Body: Pick<Comment, "content" | "postId">;
 }
 
-export type { CreateCommentProps };
+export type { CreateCommentProps, GetParamsID };

@@ -1,8 +1,10 @@
-interface PaginationProps<T = {}> {
+interface Query {
   Querystring: {
     limit: string;
     page: string;
-  } & T;
+  };
 }
+
+type PaginationProps<T = {}> = Query & T;
 
 export type { PaginationProps };
