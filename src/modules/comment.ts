@@ -57,58 +57,62 @@ export async function getComments(
   request: FastifyRequest<PaginationProps<GetParamsID>>,
   reply: FastifyReply
 ) {
-  const { postId } = request.params;
-  const { limit = "10", page = "0" } = request.query;
-  const { take, skip } = paginationProps(limit, page);
+  try {
+    const { postId } = request.params;
+    const { limit = "10", page = "0" } = request.query;
+    const { take, skip } = paginationProps(limit, page);
 
-  if (!postId) {
-    return reply.code(400).send({ message: `PostID is required.` });
-  }
+    if (!postId) {
+      return reply.code(400).send({ message: `PostID is required.` });
+    }
 
-  const post = await prisma.post.findUnique({
-    select: {
-      id: true,
-    },
-    where: {
-      id: parseInt(postId) || 0,
-    },
-  });
+    const post = await prisma.post.findUnique({
+      select: {
+        id: true,
+      },
+      where: {
+        id: parseInt(postId) || 0,
+      },
+    });
 
-  if (!post) {
-    return reply
-      .code(404)
-      .send({ message: `Post with id equal ${postId} not found.` });
-  }
+    if (!post) {
+      return reply
+        .code(404)
+        .send({ message: `Post with id equal ${postId} not found.` });
+    }
 
-  const ct = await prisma.comment.count({
-    where: {
-      postId: post.id,
-    },
-  });
+    const ct = await prisma.comment.count({
+      where: {
+        postId: post.id,
+      },
+    });
 
-  const comments = await prisma.comment.findMany({
-    take,
-    skip,
-    include: {
-      user: {
-        select: {
-          id: true,
-          username: true,
-          fullName: true,
-          avatar: true,
+    const comments = await prisma.comment.findMany({
+      take,
+      skip,
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            fullName: true,
+            avatar: true,
+          },
         },
       },
-    },
-    where: {
-      postId: post.id,
-    },
-    orderBy: {
-      id: "desc",
-    },
-  });
+      where: {
+        postId: post.id,
+      },
+      orderBy: {
+        id: "desc",
+      },
+    });
 
-  return reply.code(200).send({
-    ct,
-    data: comments,
-  });
+    return reply.code(200).send({
+      ct,
+      data: comments,
+    });
+  } catch (error) {
+    return reply.code(500).send({ message: `Server error!` });
+  }
 }
