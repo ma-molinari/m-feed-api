@@ -85,7 +85,7 @@ export async function getPost(
     });
 
     if (!post) {
-      return reply.code(404).send({ message: `Not found.` });
+      return reply.code(404).send({ message: `Post not found.` });
     }
 
     const response = {
@@ -154,7 +154,7 @@ export async function updatePost(
     });
 
     if (!post) {
-      return reply.code(404).send({ message: `Not found.` });
+      return reply.code(404).send({ message: `Post not found.` });
     }
 
     if (post.userId !== me.id) {
@@ -204,7 +204,7 @@ export async function deletePost(
     });
 
     if (!post) {
-      return reply.code(404).send({ message: `Not found.` });
+      return reply.code(404).send({ message: `Post not found.` });
     }
 
     if (post.userId !== me.id) {
@@ -370,9 +370,7 @@ export async function likePost(
     });
 
     if (!post) {
-      return reply
-        .code(404)
-        .send({ message: `Post with id equal ${postId} not found.` });
+      return reply.code(404).send({ message: `Post not found.` });
     }
 
     await RedisAddList("user:" + me.id + ":post_likes", [Date.now(), post.id]);

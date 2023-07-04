@@ -86,7 +86,7 @@ export async function getUser(
     });
 
     if (!user) {
-      return reply.code(404).send({ message: `Not found.` });
+      return reply.code(404).send({ message: `User not found.` });
     }
 
     const response = { data: user };
@@ -451,9 +451,7 @@ export async function follow(
     });
 
     if (!user) {
-      return reply
-        .code(404)
-        .send({ message: `User with id equal ${userId} not found.` });
+      return reply.code(404).send({ message: `User not found.` });
     }
 
     await followUser(me.id, user.id);
