@@ -34,9 +34,7 @@ export async function createComment(
     });
 
     if (!post) {
-      return reply
-        .code(404)
-        .send({ message: `Post with id equal ${postId} not found.` });
+      return reply.code(404).send({ message: `Post not found.` });
     }
 
     await prisma.comment.create({
@@ -76,9 +74,7 @@ export async function getComments(
     });
 
     if (!post) {
-      return reply
-        .code(404)
-        .send({ message: `Post with id equal ${postId} not found.` });
+      return reply.code(404).send({ message: `Post not found.` });
     }
 
     const ct = await prisma.comment.count({
@@ -142,20 +138,16 @@ export async function updateComment(
     });
 
     if (!post) {
-      return reply
-        .code(404)
-        .send({ message: `Post with id equal ${postId} not found.` });
+      return reply.code(404).send({ message: `Post not found.` });
     }
 
-    const comment = await prisma.comment.findUnique({
+    const comment = await prisma.comment.findFirst({
       select: { id: true, userId: true },
-      where: { id: parseInt(commentId) || 0 },
+      where: { id: parseInt(commentId) || 0, postId: post.id },
     });
 
     if (!comment) {
-      return reply
-        .code(404)
-        .send({ message: `Comment with id equal ${commentId} not found.` });
+      return reply.code(404).send({ message: `Comment not found.` });
     }
 
     if (me.id !== comment.userId) {
@@ -166,6 +158,55 @@ export async function updateComment(
 
     await prisma.comment.update({
       data: { content },
+      where: {
+        id: comment.id,
+      },
+    });
+
+    return reply.code(200).send({ message: "ok" });
+  } catch (error) {
+    return reply.code(500).send({ message: `Server error!` });
+  }
+}
+
+export async function deleteComment(
+  request: FastifyRequest<GetParamsID>,
+  reply: FastifyReply
+) {
+  try {
+    const { authorization } = request.headers;
+    const me = await session(authorization);
+    const { postId, commentId } = request.params;
+
+    if (!postId) {
+      return reply.code(400).send({ message: `PostID is required.` });
+    }
+
+    const post = await prisma.post.findUnique({
+      select: { id: true },
+      where: { id: parseInt(postId) || 0 },
+    });
+
+    if (!post) {
+      return reply.code(404).send({ message: `Post not found.` });
+    }
+
+    const comment = await prisma.comment.findFirst({
+      select: { id: true, userId: true, postId: true },
+      where: { id: parseInt(commentId) || 0, postId: post.id },
+    });
+
+    if (!comment) {
+      return reply.code(404).send({ message: `Comment not found.` });
+    }
+
+    if (me.id !== comment.userId) {
+      return reply
+        .code(403)
+        .send({ message: `Unable to delete another user's comment.` });
+    }
+
+    await prisma.comment.delete({
       where: {
         id: comment.id,
       },
