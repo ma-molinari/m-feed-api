@@ -116,3 +116,63 @@ export async function getComments(
     return reply.code(500).send({ message: `Server error!` });
   }
 }
+
+export async function updateComment(
+  request: FastifyRequest<CreateCommentProps>,
+  reply: FastifyReply
+) {
+  try {
+    const { authorization } = request.headers;
+    const me = await session(authorization);
+
+    const { postId, commentId } = request.params;
+    const { content } = request.body;
+
+    if (!postId) {
+      return reply.code(400).send({ message: `PostID is required.` });
+    }
+
+    if (!content) {
+      return reply.code(400).send({ message: `Content is required.` });
+    }
+
+    const post = await prisma.post.findUnique({
+      select: { id: true },
+      where: { id: parseInt(postId) || 0 },
+    });
+
+    if (!post) {
+      return reply
+        .code(404)
+        .send({ message: `Post with id equal ${postId} not found.` });
+    }
+
+    const comment = await prisma.comment.findUnique({
+      select: { id: true, userId: true },
+      where: { id: parseInt(commentId) || 0 },
+    });
+
+    if (!comment) {
+      return reply
+        .code(404)
+        .send({ message: `Comment with id equal ${commentId} not found.` });
+    }
+
+    if (me.id !== comment.userId) {
+      return reply
+        .code(403)
+        .send({ message: `Unable to update another user's comment.` });
+    }
+
+    await prisma.comment.update({
+      data: { content },
+      where: {
+        id: comment.id,
+      },
+    });
+
+    return reply.code(200).send({ message: "ok" });
+  } catch (error) {
+    return reply.code(500).send({ message: `Server error!` });
+  }
+}

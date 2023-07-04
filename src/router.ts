@@ -23,7 +23,7 @@ import {
   unlikePost,
   updatePost,
 } from "@modules/post";
-import { createComment, getComments } from "@modules/comment";
+import { createComment, getComments, updateComment } from "@modules/comment";
 
 export async function publicRouter(fastify: FastifyInstance) {
   /**
@@ -70,6 +70,6 @@ export async function privateRouter(fastify: FastifyInstance) {
    */
   fastify.post("/posts/:postId/comments", createComment);
   fastify.get("/posts/:postId/comments", getComments);
-  fastify.put("/posts/:postId/comments/:commentId", updatePost);
+  fastify.put("/posts/:postId/comments/:commentId", updateComment);
   fastify.delete("/posts/:postId/comments/:commentId", deletePost);
 }
