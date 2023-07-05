@@ -100,7 +100,7 @@ export async function getPost(
   }
 }
 
-export async function getPostsLikedByMe(
+export async function getLikedPostsByMe(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
@@ -112,6 +112,68 @@ export async function getPostsLikedByMe(
     return reply.code(200).send({
       data: likes,
     });
+  } catch (error) {
+    return reply.code(500).send({ message: `Server error!` });
+  }
+}
+
+export async function getUserPosts(
+  request: FastifyRequest<PaginationProps<GetParamsID>>,
+  reply: FastifyReply
+) {
+  try {
+    const { id } = request.params;
+
+    if (!id) {
+      return reply.code(400).send({ message: `UserID is required.` });
+    }
+
+    const { limit = "10", page = "0" } = request.query;
+    const { take, skip } = paginationProps(limit, page);
+
+    const isFirstPage = page === "0";
+    const cacheKey = "user:" + id + ":posts";
+
+    if (isFirstPage) {
+      const cachedPosts = await RedisGetJson(cacheKey);
+      if (cachedPosts) {
+        return cachedPosts;
+      }
+    }
+
+    const user = await prisma.user.findUnique({
+      select: { id: true },
+      where: { id: parseInt(id) || 0 },
+    });
+
+    if (!user) {
+      return reply.code(404).send({ message: `User not found.` });
+    }
+
+    const ct = await prisma.post.count({
+      where: { userId: user.id },
+    });
+
+    const posts = await prisma.post.findMany({
+      take,
+      skip,
+      where: { userId: user.id },
+    });
+
+    if (!posts) {
+      return reply.code(404).send({ message: `Not found.` });
+    }
+
+    const response = {
+      ct,
+      data: posts,
+    };
+
+    if (isFirstPage) {
+      await RedisSetTTL(cacheKey, response, 86400);
+    }
+
+    return reply.code(200).send(response);
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
   }

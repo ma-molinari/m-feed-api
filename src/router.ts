@@ -5,7 +5,6 @@ import {
   getUser,
   getUserFollowers,
   getUserFollowings,
-  getUserPosts,
   me,
   search,
   unfollow,
@@ -17,8 +16,9 @@ import {
   deletePost,
   explore,
   feed,
+  getLikedPostsByMe,
   getPost,
-  getPostsLikedByMe,
+  getUserPosts,
   likePost,
   unlikePost,
   updatePost,
@@ -43,7 +43,7 @@ export async function privateRouter(fastify: FastifyInstance) {
    * Me Routes
    */
   fastify.get("/users/me", me);
-  fastify.get("/users/me/liked-posts", getPostsLikedByMe);
+  fastify.get("/users/me/liked-posts", getLikedPostsByMe);
 
   /**
    * User Routes

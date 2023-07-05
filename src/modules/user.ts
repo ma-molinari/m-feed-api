@@ -105,76 +105,6 @@ export async function getUser(
   }
 }
 
-export async function getUserPosts(
-  request: FastifyRequest<GetUserPostsProps>,
-  reply: FastifyReply
-) {
-  try {
-    const { id } = request.params;
-    const { limit = "10", page = "0" } = request.query;
-    const { take, skip } = paginationProps(limit, page);
-    const isFirstPage = page === "0";
-
-    if (!id) {
-      return reply.code(400).send({ message: `ID is required.` });
-    }
-
-    const cacheKey = "user:" + id + ":posts";
-    if (isFirstPage) {
-      const cachedPosts = await RedisGetJson(cacheKey);
-      if (cachedPosts) {
-        return cachedPosts;
-      }
-    }
-
-    const user = await prisma.user.findUnique({
-      select: {
-        id: true,
-      },
-      where: {
-        id: parseInt(id) || 0,
-      },
-    });
-
-    if (!user) {
-      return reply
-        .code(404)
-        .send({ message: `User with id equal ${id} not found.` });
-    }
-
-    const ct = await prisma.post.count({
-      where: {
-        userId: user.id,
-      },
-    });
-
-    const posts = await prisma.post.findMany({
-      take,
-      skip,
-      where: {
-        userId: user.id,
-      },
-    });
-
-    if (!posts) {
-      return reply.code(404).send({ message: `Not found.` });
-    }
-
-    const response = {
-      ct,
-      data: posts,
-    };
-
-    if (isFirstPage) {
-      await RedisSetTTL(cacheKey, response, 86400);
-    }
-
-    return reply.code(200).send(response);
-  } catch (error) {
-    return reply.code(500).send({ message: `Server error!` });
-  }
-}
-
 export async function getUserFollowers(
   request: FastifyRequest<GetUserPostsProps>,
   reply: FastifyReply
@@ -514,10 +444,10 @@ export async function followingIds(userId: number | string): Promise<number[]> {
   return userIds.map((i) => parseInt(i));
 }
 
-export async function invalidateUserCache(id: number) {
+export async function invalidateUserCache(userId: number) {
   try {
-    await RedisClearKey("user:" + id + ":profile");
-    await RedisClearKey("user:" + id + ":posts");
+    await RedisClearKey("user:" + userId + ":profile");
+    await RedisClearKey("user:" + userId + ":posts");
   } catch (error) {
     logger.error("There was an error clearing user cache.");
   }
