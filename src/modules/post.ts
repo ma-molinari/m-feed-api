@@ -100,25 +100,18 @@ export async function getPost(
   }
 }
 
-export async function getPostLikes(
-  request: FastifyRequest<GetParamsID>,
+export async function getPostsLikedByMe(
+  request: FastifyRequest,
   reply: FastifyReply
 ) {
   try {
-    const { id } = request.params;
-    const likes = await postLikesIds(parseInt(id) || 0);
+    const { authorization } = request.headers;
+    const user = await session(authorization);
+    const likes = await userLikedPostsIds(user.id);
 
-    if (!id) {
-      return reply.code(400).send({ message: `ID is required.` });
-    }
-
-    const response = {
-      data: {
-        likes: likes.length,
-      },
-    };
-
-    return reply.code(200).send(response);
+    return reply.code(200).send({
+      data: likes,
+    });
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
   }

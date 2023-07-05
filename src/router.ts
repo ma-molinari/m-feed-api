@@ -18,7 +18,7 @@ import {
   explore,
   feed,
   getPost,
-  getPostLikes,
+  getPostsLikedByMe,
   likePost,
   unlikePost,
   updatePost,
@@ -40,9 +40,14 @@ export async function publicRouter(fastify: FastifyInstance) {
 
 export async function privateRouter(fastify: FastifyInstance) {
   /**
-   * User Routes
+   * Me Routes
    */
   fastify.get("/users/me", me);
+  fastify.get("/users/me/liked-posts", getPostsLikedByMe);
+
+  /**
+   * User Routes
+   */
   fastify.get("/users/:id", getUser);
   fastify.get("/users/:id/posts", getUserPosts);
   fastify.get("/users/:id/followers", getUserFollowers);
@@ -58,7 +63,6 @@ export async function privateRouter(fastify: FastifyInstance) {
    */
   fastify.post("/posts", createPost);
   fastify.get("/posts/:id", getPost);
-  fastify.get("/posts/:id/likes", getPostLikes);
   fastify.put("/posts/:id", updatePost);
   fastify.delete("/posts/:id", deletePost);
   fastify.post("/posts/like", likePost);
