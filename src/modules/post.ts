@@ -1,4 +1,5 @@
 import { FastifyReply, FastifyRequest } from "fastify";
+import { Post } from "@prisma/client";
 import prisma from "@libs/prisma";
 import logger from "@libs/logger";
 import {
@@ -62,10 +63,17 @@ export async function getPost(
       return reply.code(400).send({ message: `ID is required.` });
     }
 
+    const totalLikes = (await postLikesIds(id)) ?? [];
+
     const cacheKey = "post:" + id + ":detail";
-    const cachedPost = await RedisGetJson(cacheKey);
+    const cachedPost = await RedisGetJson<{ data: Post }>(cacheKey);
     if (cachedPost) {
-      return cachedPost;
+      return {
+        data: {
+          ...cachedPost.data,
+          total_likes: totalLikes.length,
+        },
+      };
     }
 
     const post = await prisma.post.findUnique({
@@ -89,7 +97,7 @@ export async function getPost(
     }
 
     const response = {
-      data: post,
+      data: { ...post, total_likes: totalLikes.length },
     };
 
     await RedisSetTTL(cacheKey, response, 86400); // 1 day in seconds.
@@ -465,7 +473,7 @@ export async function unlikePost(
   }
 }
 
-async function postLikesIds(postId: number): Promise<number[]> {
+async function postLikesIds(postId: number | string): Promise<number[]> {
   const postIds = await RedisGetList("post:" + postId + ":likes");
   return postIds.map((i) => parseInt(i));
 }
