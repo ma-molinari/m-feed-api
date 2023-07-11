@@ -1,5 +1,4 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { Post } from "@prisma/client";
 import prisma from "@libs/prisma";
 import logger from "@libs/logger";
 import {
@@ -13,6 +12,7 @@ import {
 } from "@libs/redis";
 import session from "@utils/session";
 import {
+  Post,
   CreatePostProps,
   GetParamsID,
   LikePostProps,
@@ -139,16 +139,6 @@ export async function getUserPosts(
     const { limit = "10", page = "0" } = request.query;
     const { take, skip } = paginationProps(limit, page);
 
-    const isFirstPage = page === "0";
-    const cacheKey = "user:" + id + ":posts";
-
-    if (isFirstPage) {
-      const cachedPosts = await RedisGetJson(cacheKey);
-      if (cachedPosts) {
-        return cachedPosts;
-      }
-    }
-
     const user = await prisma.user.findUnique({
       select: { id: true },
       where: { id: parseInt(id) || 0 },
@@ -172,16 +162,15 @@ export async function getUserPosts(
       return reply.code(404).send({ message: `Not found.` });
     }
 
-    const response = {
-      ct,
-      data: posts,
-    };
-
-    if (isFirstPage) {
-      await RedisSetTTL(cacheKey, response, 86400);
+    for (const p of posts as Post[]) {
+      const totalLikes = (await postLikesIds(p.id)) ?? [];
+      p.total_likes = totalLikes.length;
     }
 
-    return reply.code(200).send(response);
+    return reply.code(200).send({
+      ct,
+      data: posts,
+    });
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
   }
@@ -331,6 +320,11 @@ export async function feed(
       },
     });
 
+    for (const p of posts as Post[]) {
+      const totalLikes = (await postLikesIds(p.id)) ?? [];
+      p.total_likes = totalLikes.length;
+    }
+
     return reply.code(200).send({
       ct,
       data: posts,
@@ -349,26 +343,16 @@ export async function explore(
     const { limit = "10", page = "0" } = request.query;
     const { take, skip } = paginationProps(limit, page);
 
-    const isFirstPage = page === "0";
-
     const me = await session(authorization);
-    const followedUsersIds = await followingIds(me.id);
-
-    const cacheKey = "user:" + me.id + ":explore";
-    if (isFirstPage) {
-      const cachedPosts = await RedisGetJson(cacheKey);
-      if (cachedPosts) {
-        return cachedPosts;
-      }
-    }
+    const followingUsersIds = await followingIds(me.id);
 
     const ct = await prisma.post.count({
       where: {
-        userId: { notIn: [...followedUsersIds, me.id] },
+        userId: { notIn: [...followingUsersIds, me.id] },
       },
     });
 
-    const posts = await prisma.post.findMany({
+    const posts: any = await prisma.post.findMany({
       take,
       skip,
       include: {
@@ -382,23 +366,22 @@ export async function explore(
         },
       },
       where: {
-        userId: { notIn: [...followedUsersIds, me.id] },
+        userId: { notIn: [...followingUsersIds, me.id] },
       },
       orderBy: {
         id: "desc",
       },
     });
 
-    const response = {
-      ct,
-      data: posts,
-    };
-
-    if (isFirstPage) {
-      await RedisSetTTL(cacheKey, response, 3600);
+    for (const p of posts) {
+      const totalLikes = (await postLikesIds(p.id)) ?? [];
+      p.total_likes = totalLikes.length;
     }
 
-    return reply.code(200).send(response);
+    return reply.code(200).send({
+      ct,
+      data: posts,
+    });
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
   }

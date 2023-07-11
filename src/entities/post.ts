@@ -1,4 +1,9 @@
-import { Post } from "@prisma/client";
+import { Post as PostModel, User as UserModel } from "@prisma/client";
+
+interface Post extends PostModel {
+  total_likes: number;
+  user?: UserModel;
+}
 
 interface GetParamsID {
   Params: {
@@ -20,4 +25,10 @@ interface LikePostProps {
   };
 }
 
-export type { GetParamsID, CreatePostProps, UpdatePostProps, LikePostProps };
+export type {
+  Post,
+  GetParamsID,
+  CreatePostProps,
+  UpdatePostProps,
+  LikePostProps,
+};
