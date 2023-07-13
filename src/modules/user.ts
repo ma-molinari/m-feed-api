@@ -11,7 +11,7 @@ import {
 } from "@libs/redis";
 import logger from "@libs/logger";
 import { RedisClearKey } from "@libs/redis";
-import { invalidateExploreCache } from "@modules/post";
+import { invalidateExploreCache, postLikesIds } from "@modules/post";
 import {
   GetUserProps,
   UpdateUserProps,
@@ -341,6 +341,70 @@ export async function search(
       ct,
       data: users,
     });
+  } catch (error) {
+    return reply.code(500).send({ message: `Server error!` });
+  }
+}
+
+export async function usersLikedPost(
+  request: FastifyRequest<GetUserPostsProps>,
+  reply: FastifyReply
+) {
+  try {
+    const { id } = request.params;
+    const { limit = "10", page = "0" } = request.query;
+    const { take, skip } = paginationProps(limit, page);
+
+    if (!id) {
+      return reply.code(400).send({ message: `ID is required.` });
+    }
+
+    const post = await prisma.post.findUnique({
+      select: {
+        id: true,
+      },
+      where: {
+        id: parseInt(id) || 0,
+      },
+    });
+
+    if (!post) {
+      return reply.code(404).send({ message: `Post not found.` });
+    }
+
+    const usersLikesIds = await postLikesIds(post.id);
+
+    const ct = await prisma.user.count({
+      where: {
+        id: {
+          in: usersLikesIds,
+        },
+      },
+    });
+
+    const users = await prisma.user.findMany({
+      take,
+      skip,
+      select: {
+        id: true,
+        avatar: true,
+        username: true,
+        fullName: true,
+        bio: true,
+        email: true,
+        createdAt: true,
+      },
+      where: {
+        id: {
+          in: usersLikesIds,
+        },
+      },
+    });
+
+    return {
+      ct,
+      data: users,
+    };
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
   }

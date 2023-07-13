@@ -10,6 +10,7 @@ import {
   unfollow,
   updatePassword,
   updateProfile,
+  usersLikedPost,
 } from "@modules/user";
 import {
   createPost,
@@ -67,6 +68,7 @@ export async function privateRouter(fastify: FastifyInstance) {
   fastify.delete("/posts/:id", deletePost);
   fastify.post("/posts/like", likePost);
   fastify.post("/posts/unlike", unlikePost);
+  fastify.get("/posts/:id/users-likes", usersLikedPost);
 
   /**
    * Feed Routes
