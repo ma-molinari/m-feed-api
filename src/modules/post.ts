@@ -274,6 +274,7 @@ export async function deletePost(
     await invalidateExploreCache();
     await invalidateUserCache(me.id);
     await invalidatePostCache(post.id);
+    await invalidateLikesCache(me.id, post.id);
 
     return reply.code(200).send({ message: "ok" });
   } catch (error) {
@@ -447,8 +448,7 @@ export async function unlikePost(
       return reply.code(400).send({ message: `Unable to unlike post.` });
     }
 
-    await RedisRemoveFromList("user:" + me.id + ":post_likes", postId);
-    await RedisRemoveFromList("post:" + postId + ":likes", me.id);
+    await invalidateLikesCache(me.id, postId);
 
     return reply.code(200).send({ message: "OK" });
   } catch (error) {
@@ -456,7 +456,7 @@ export async function unlikePost(
   }
 }
 
-async function postLikesIds(postId: number | string): Promise<number[]> {
+export async function postLikesIds(postId: number | string): Promise<number[]> {
   const postIds = await RedisGetList("post:" + postId + ":likes");
   return postIds.map((i) => parseInt(i));
 }
@@ -471,6 +471,15 @@ async function invalidatePostCache(postId: number) {
     await RedisClearKey("post:" + postId + ":detail");
   } catch (error) {
     logger.error("There was an error clearing post cache.");
+  }
+}
+
+async function invalidateLikesCache(meId: number, postId: number) {
+  try {
+    await RedisRemoveFromList("user:" + meId + ":post_likes", postId);
+    await RedisRemoveFromList("post:" + postId + ":likes", meId);
+  } catch (error) {
+    logger.error("There was an error clearing likes cache.");
   }
 }
 
