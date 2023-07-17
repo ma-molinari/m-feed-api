@@ -69,10 +69,7 @@ export async function getPost(
     const cachedPost = await RedisGetJson<{ data: Post }>(cacheKey);
     if (cachedPost) {
       return {
-        data: {
-          ...cachedPost.data,
-          total_likes: totalLikes.length,
-        },
+        data: { ...cachedPost.data, total_likes: totalLikes.length },
       };
     }
 
@@ -96,13 +93,11 @@ export async function getPost(
       return reply.code(404).send({ message: `Post not found.` });
     }
 
-    const response = {
+    await RedisSetTTL(cacheKey, { data: post }, 86400); // 1 day in seconds.
+
+    return reply.code(200).send({
       data: { ...post, total_likes: totalLikes.length },
-    };
-
-    await RedisSetTTL(cacheKey, response, 86400); // 1 day in seconds.
-
-    return reply.code(200).send(response);
+    });
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
   }
@@ -158,10 +153,6 @@ export async function getUserPosts(
       where: { userId: user.id },
     });
 
-    if (!posts) {
-      return reply.code(404).send({ message: `Not found.` });
-    }
-
     for (const p of posts as Post[]) {
       const totalLikes = (await postLikesIds(p.id)) ?? [];
       p.total_likes = totalLikes.length;
@@ -182,8 +173,8 @@ export async function updatePost(
 ) {
   try {
     const { authorization } = request.headers;
-    const { id } = request.params;
     const { content } = request.body;
+    const { id } = request.params;
     const me = await session(authorization);
 
     if (!id) {

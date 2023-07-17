@@ -11,6 +11,12 @@ export async function login(
   try {
     const { email, password } = request.body;
 
+    if (!email || !password) {
+      return reply
+        .code(400)
+        .send({ message: `E-mail and Password are required.` });
+    }
+
     const user = await prisma.user.findFirst({
       where: {
         OR: [{ email }, { username: email }],
@@ -51,7 +57,7 @@ export async function register(
   try {
     const { email, username, fullName, password } = request.body;
 
-    if (!(email && username && fullName && password)) {
+    if (!email || !username || !fullName || !password) {
       return reply.code(400).send({ message: `All fields are required.` });
     }
 

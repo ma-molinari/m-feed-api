@@ -89,13 +89,11 @@ export async function getUser(
       return reply.code(404).send({ message: `User not found.` });
     }
 
-    const response = { data: user };
-
-    await RedisSetTTL(cacheKey, response, 86400); // 1 day in seconds.
+    await RedisSetTTL(cacheKey, { data: user }, 86400); // 1 day in seconds.
 
     return reply.code(200).send({
       data: {
-        ...response.data,
+        ...user,
         followers: followers.length,
         following: following.length,
       },
@@ -448,7 +446,9 @@ export async function follow(
       return reply.code(404).send({ message: `User not found.` });
     }
 
-    await followUser(me.id, user.id);
+    await RedisAddList("user:" + me.id + ":following", [Date.now(), user.id]);
+    await RedisAddList("user:" + user.id + ":followers", [Date.now(), me.id]);
+    await invalidateExploreCache();
 
     return reply.code(200).send({ message: "OK" });
   } catch (error) {
@@ -475,27 +475,14 @@ export async function unfollow(
       return reply.code(400).send({ message: `Unable to unfollow user.` });
     }
 
-    await unfollowUser(me.id, userId);
+    await RedisRemoveFromList("user:" + me.id + ":following", userId);
+    await RedisRemoveFromList("user:" + userId + ":followers", me.id);
+    await invalidateExploreCache();
 
     return reply.code(200).send({ message: "OK" });
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
   }
-}
-
-export async function followUser(meId: number, userId: number): Promise<void> {
-  await RedisAddList("user:" + meId + ":following", [Date.now(), userId]);
-  await RedisAddList("user:" + userId + ":followers", [Date.now(), meId]);
-  await invalidateExploreCache();
-}
-
-export async function unfollowUser(
-  meId: number,
-  userId: number
-): Promise<void> {
-  await RedisRemoveFromList("user:" + meId + ":following", userId);
-  await RedisRemoveFromList("user:" + userId + ":followers", meId);
-  await invalidateExploreCache();
 }
 
 export async function followerIds(userId: number | string): Promise<number[]> {

@@ -175,8 +175,8 @@ export async function deleteComment(
 ) {
   try {
     const { authorization } = request.headers;
-    const me = await session(authorization);
     const { postId, commentId } = request.params;
+    const me = await session(authorization);
 
     if (!postId) {
       return reply.code(400).send({ message: `PostID is required.` });
