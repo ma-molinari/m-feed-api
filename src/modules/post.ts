@@ -19,7 +19,7 @@ import {
   invalidatePostLikesCache,
 } from "@cache/post";
 import session from "@utils/session";
-import { followingIds, invalidateUserCache } from "./user";
+import { getFollowingCache, invalidateUserCache } from "@cache/user";
 
 export async function createPost(
   request: FastifyRequest<CreatePostProps>,
@@ -278,7 +278,7 @@ export async function feed(
     const { take, skip } = paginationProps(limit, page);
 
     const me = await session(authorization);
-    const followedUsersIds = await followingIds(me.id);
+    const followedUsersIds = await getFollowingCache(me.id);
 
     const ct = await prisma.post.count({
       where: {
@@ -331,7 +331,7 @@ export async function explore(
     const { take, skip } = paginationProps(limit, page);
 
     const me = await session(authorization);
-    const followingUsersIds = await followingIds(me.id);
+    const followingUsersIds = await getFollowingCache(me.id);
 
     const ct = await prisma.post.count({
       where: {

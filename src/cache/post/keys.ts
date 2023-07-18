@@ -4,6 +4,6 @@ export const keyPostDetail = (postId: string | number) => {
 export const keyPostLikes = (postId: string | number) => {
   return `post:${postId}:likes`;
 };
-export const keyUserPostLikes = (userId: string | number) => {
+export const keyUserLikesPost = (userId: string | number) => {
   return `user:${userId}:post_likes`;
 };

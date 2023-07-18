@@ -7,7 +7,7 @@ import {
   RedisRemoveFromList,
   RedisSetTTL,
 } from "@libs/redis";
-import { keyPostDetail, keyPostLikes, keyUserPostLikes } from "./keys";
+import { keyPostDetail, keyPostLikes, keyUserLikesPost } from "./keys";
 import { Post } from "@prisma/client";
 
 /**
@@ -42,7 +42,7 @@ export async function invalidatePostCache(postId: number | string) {
  */
 export async function setPostLikesCache(userId: number, postId: number) {
   try {
-    await RedisAddList(keyUserPostLikes(userId), [Date.now(), postId]);
+    await RedisAddList(keyUserLikesPost(userId), [Date.now(), postId]);
     await RedisAddList(keyPostLikes(postId), [Date.now(), userId]);
   } catch (error) {
     logger.error("An error occurred while setting the post likes cache.");
@@ -62,7 +62,7 @@ export async function getPostLikesCache(postId: number | string) {
 
 export async function getUserLikesPostCache(userId: number | string) {
   try {
-    const postIds = await RedisGetList(keyUserPostLikes(userId));
+    const postIds = await RedisGetList(keyUserLikesPost(userId));
     return postIds.map(Number);
   } catch (error) {
     logger.error(
@@ -73,7 +73,7 @@ export async function getUserLikesPostCache(userId: number | string) {
 
 export async function invalidatePostLikesCache(userId: number, postId: number) {
   try {
-    await RedisRemoveFromList(keyUserPostLikes(userId), postId);
+    await RedisRemoveFromList(keyUserLikesPost(userId), postId);
     await RedisRemoveFromList(keyPostLikes(postId), userId);
   } catch (error) {
     logger.error("An error occurred while clearing the cache of likes.");

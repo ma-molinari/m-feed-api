@@ -3,15 +3,6 @@ import { compare, hash } from "bcryptjs";
 import prisma from "@libs/prisma";
 import session from "@utils/session";
 import {
-  RedisGetList,
-  RedisAddList,
-  RedisRemoveFromList,
-  RedisGetJson,
-  RedisSetTTL,
-} from "@libs/redis";
-import logger from "@libs/logger";
-import { RedisClearKey } from "@libs/redis";
-import {
   GetUserProps,
   UpdateUserProps,
   UpdatePasswordProps,
@@ -19,7 +10,15 @@ import {
   FollowUserProps,
   GetUserPostsProps,
 } from "@entities/user";
-import { User } from "@prisma/client";
+import {
+  setUserCache,
+  getUserCache,
+  invalidateUserCache,
+  setUserFollowerCache,
+  getFollowersCache,
+  getFollowingCache,
+  invalidateUserFollowerCache,
+} from "@cache/user";
 import { getPostLikesCache } from "@cache/post";
 import { paginationProps } from "./pagination";
 
@@ -28,8 +27,8 @@ export async function me(request: FastifyRequest, reply: FastifyReply) {
     const { authorization } = request.headers;
 
     const user = await session(authorization);
-    const followers = (await followerIds(user.id)) ?? [];
-    const following = (await followingIds(user.id)) ?? [];
+    const followers = await getFollowersCache(user.id);
+    const following = await getFollowingCache(user.id);
 
     return reply.code(200).send({
       data: {
@@ -54,16 +53,14 @@ export async function getUser(
       return reply.code(400).send({ message: `ID is required.` });
     }
 
-    const cacheKey = "user:" + id + ":profile";
-    const cachedPost = await RedisGetJson<{ data: User }>(cacheKey);
+    const followers = await getFollowersCache(id);
+    const following = await getFollowingCache(id);
+    const cachedUser = await getUserCache(id);
 
-    const followers = (await followerIds(id)) ?? [];
-    const following = (await followingIds(id)) ?? [];
-
-    if (cachedPost) {
+    if (cachedUser) {
       return {
         data: {
-          ...cachedPost.data,
+          ...cachedUser,
           followers: followers.length,
           following: following.length,
         },
@@ -89,7 +86,7 @@ export async function getUser(
       return reply.code(404).send({ message: `User not found.` });
     }
 
-    await RedisSetTTL(cacheKey, { data: user }, 86400); // 1 day in seconds.
+    await setUserCache(user.id, user);
 
     return reply.code(200).send({
       data: {
@@ -116,7 +113,7 @@ export async function getUserFollowers(
       return reply.code(400).send({ message: `ID is required.` });
     }
 
-    const usersIds = await followerIds(id);
+    const usersIds = await getFollowersCache(id);
 
     const ct = await prisma.user.count({
       where: {
@@ -167,7 +164,7 @@ export async function getUserFollowings(
       return reply.code(400).send({ message: `ID is required.` });
     }
 
-    const usersIds = await followingIds(id);
+    const usersIds = await getFollowingCache(id);
 
     const ct = await prisma.user.count({
       where: {
@@ -421,7 +418,7 @@ export async function follow(
     }
 
     const me = await session(authorization);
-    const followedUsersIds = await followingIds(me.id);
+    const followedUsersIds = await getFollowingCache(me.id);
 
     if (me.id === userId) {
       return reply.code(400).send({ message: `Can't follow yourself.` });
@@ -446,8 +443,7 @@ export async function follow(
       return reply.code(404).send({ message: `User not found.` });
     }
 
-    await RedisAddList("user:" + me.id + ":following", [Date.now(), user.id]);
-    await RedisAddList("user:" + user.id + ":followers", [Date.now(), me.id]);
+    await setUserFollowerCache(me.id, user.id);
 
     return reply.code(200).send({ message: "OK" });
   } catch (error) {
@@ -464,7 +460,7 @@ export async function unfollow(
     const { userId } = request.body;
 
     const me = await session(authorization);
-    const followedUsersIds = await followingIds(me.id);
+    const followedUsersIds = await getFollowingCache(me.id);
 
     if (!userId) {
       return reply.code(400).send({ message: `UserID is required.` });
@@ -474,30 +470,10 @@ export async function unfollow(
       return reply.code(400).send({ message: `Unable to unfollow user.` });
     }
 
-    await RedisRemoveFromList("user:" + me.id + ":following", userId);
-    await RedisRemoveFromList("user:" + userId + ":followers", me.id);
+    await invalidateUserFollowerCache(me.id, userId);
 
     return reply.code(200).send({ message: "OK" });
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
-  }
-}
-
-export async function followerIds(userId: number | string): Promise<number[]> {
-  const userIds = await RedisGetList("user:" + userId + ":followers");
-  return userIds.map((i) => parseInt(i));
-}
-
-export async function followingIds(userId: number | string): Promise<number[]> {
-  const userIds = await RedisGetList("user:" + userId + ":following");
-  return userIds.map((i) => parseInt(i));
-}
-
-export async function invalidateUserCache(userId: number) {
-  try {
-    await RedisClearKey("user:" + userId + ":profile");
-    await RedisClearKey("user:" + userId + ":posts");
-  } catch (error) {
-    logger.error("There was an error clearing user cache.");
   }
 }
