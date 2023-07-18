@@ -11,7 +11,6 @@ import {
 } from "@libs/redis";
 import logger from "@libs/logger";
 import { RedisClearKey } from "@libs/redis";
-import { invalidateExploreCache, postLikesIds } from "@modules/post";
 import {
   GetUserProps,
   UpdateUserProps,
@@ -20,8 +19,9 @@ import {
   FollowUserProps,
   GetUserPostsProps,
 } from "@entities/user";
-import { paginationProps } from "./pagination";
 import { User } from "@prisma/client";
+import { getPostLikesCache } from "@cache/post";
+import { paginationProps } from "./pagination";
 
 export async function me(request: FastifyRequest, reply: FastifyReply) {
   try {
@@ -370,7 +370,7 @@ export async function usersLikedPost(
       return reply.code(404).send({ message: `Post not found.` });
     }
 
-    const usersLikesIds = await postLikesIds(post.id);
+    const usersLikesIds = await getPostLikesCache(post.id);
 
     const ct = await prisma.user.count({
       where: {
@@ -448,7 +448,6 @@ export async function follow(
 
     await RedisAddList("user:" + me.id + ":following", [Date.now(), user.id]);
     await RedisAddList("user:" + user.id + ":followers", [Date.now(), me.id]);
-    await invalidateExploreCache();
 
     return reply.code(200).send({ message: "OK" });
   } catch (error) {
@@ -477,7 +476,6 @@ export async function unfollow(
 
     await RedisRemoveFromList("user:" + me.id + ":following", userId);
     await RedisRemoveFromList("user:" + userId + ":followers", me.id);
-    await invalidateExploreCache();
 
     return reply.code(200).send({ message: "OK" });
   } catch (error) {

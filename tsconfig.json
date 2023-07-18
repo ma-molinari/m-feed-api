@@ -15,6 +15,7 @@
     "paths": {
       "@modules/*": ["./modules/*"],
       "@entities/*": ["./entities/*"],
+      "@cache/*": ["./cache/*"],
       "@libs/*": ["./libs/*"],
       "@middlewares/*": ["./middlewares/*"],
       "@utils/*": ["./utils/*"]
