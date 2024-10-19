@@ -111,7 +111,7 @@ export const RedisRemoveFromList = async (
  */
 export const RedisSetTTL = async (
   key: string,
-  payload: object,
+  payload: object | string,
   seconds = 300
 ) => {
   const json = JSON.stringify(payload);

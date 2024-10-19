@@ -106,3 +106,5 @@ build
 
 # TernJS port file
 .tern-port
+
+/uploads

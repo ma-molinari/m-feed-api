@@ -30,6 +30,7 @@ import {
   getComments,
   updateComment,
 } from "@modules/comment";
+import { getFile, uploadFile } from "@modules/file";
 
 export async function publicRouter(fastify: FastifyInstance) {
   /**
@@ -37,6 +38,7 @@ export async function publicRouter(fastify: FastifyInstance) {
    */
   fastify.post("/login", login);
   fastify.post("/register", register);
+  fastify.get("/file/:filename", getFile);
 }
 
 export async function privateRouter(fastify: FastifyInstance) {
@@ -83,4 +85,9 @@ export async function privateRouter(fastify: FastifyInstance) {
   fastify.get("/posts/:postId/comments", getComments);
   fastify.put("/posts/:postId/comments/:commentId", updateComment);
   fastify.delete("/posts/:postId/comments/:commentId", deleteComment);
+
+  /**
+   * File Routes
+   */
+  fastify.post("/file/upload", uploadFile);
 }

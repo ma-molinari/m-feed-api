@@ -1,5 +1,6 @@
 import Fastify, { FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
+import multipart from "@fastify/multipart";
 import authSession from "@middlewares/authSession";
 import { privateRouter, publicRouter } from "./router";
 
@@ -8,6 +9,7 @@ const server: FastifyInstance = Fastify({
 });
 
 server.register(cors);
+server.register(multipart);
 server.register(publicRouter, { prefix: "public" });
 server.register(privateRouter, { prefix: "api" });
 server.addHook("onRequest", authSession);
