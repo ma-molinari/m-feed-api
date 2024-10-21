@@ -108,3 +108,4 @@ build
 .tern-port
 
 /uploads
+/src/uploads

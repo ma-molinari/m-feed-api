@@ -1,7 +1,7 @@
 import session from "@utils/session";
 
 export default async function authSession(request, reply) {
-  if (request.url.includes(`/public`)) {
+  if (request.url.includes(`/public`) || request.url.includes("/static")) {
     return null;
   }
 
