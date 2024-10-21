@@ -30,7 +30,7 @@ import {
   getComments,
   updateComment,
 } from "@modules/comment";
-import { getFile, uploadFile } from "@modules/file";
+import { uploadFile } from "@modules/file";
 
 export async function publicRouter(fastify: FastifyInstance) {
   /**
@@ -38,7 +38,6 @@ export async function publicRouter(fastify: FastifyInstance) {
    */
   fastify.post("/login", login);
   fastify.post("/register", register);
-  fastify.get("/file/:filename", getFile);
 }
 
 export async function privateRouter(fastify: FastifyInstance) {

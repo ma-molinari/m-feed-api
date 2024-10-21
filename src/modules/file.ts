@@ -3,8 +3,6 @@ import fs from "fs";
 import util from "util";
 import { pipeline } from "stream";
 import path from "path";
-import { GetFileProps, MIME_TYPE } from "@entities/file";
-import { getFileCache, setFileCache } from "@cache/file";
 
 const pump = util.promisify(pipeline);
 const STATIC_PATH = path.join(process.cwd(), "uploads");
@@ -31,33 +29,6 @@ export async function uploadFile(request: FastifyRequest, reply: FastifyReply) {
     return reply.code(200).send({ filename, mimetype: part.mimetype });
   } catch (error) {
     console.log(error.message);
-    return reply.code(500).send({ message: `Server error!` });
-  }
-}
-
-export async function getFile(
-  request: FastifyRequest<GetFileProps>,
-  reply: FastifyReply,
-) {
-  try {
-    const { filename } = request.params;
-    const mimetype = path.extname(filename).slice(1);
-
-    const fileCache = await getFileCache(filename);
-    if (fileCache) {
-      return reply.type(MIME_TYPE[mimetype]).send(fileCache);
-    }
-
-    const filePath = path.join(STATIC_PATH, filename);
-    const fileExists = fs.existsSync(filePath);
-    if (!fileExists) {
-      return reply.code(404).send({ message: "File not found." });
-    }
-
-    const buffer = fs.readFileSync(filePath);
-    await setFileCache(filename, buffer);
-    return reply.type(MIME_TYPE[mimetype]).send(buffer);
-  } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
   }
 }
