@@ -23,12 +23,16 @@ import { getFollowingCache, invalidateUserCache } from "@cache/user";
 
 export async function createPost(
   request: FastifyRequest<CreatePostProps>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { authorization } = request.headers;
     const { image, content } = request.body;
     const me = await session(authorization);
+
+    if (!content) {
+      return reply.code(400).send({ message: `Content is required.` });
+    }
 
     if (!image) {
       return reply.code(400).send({ message: `Image is required.` });
@@ -52,7 +56,7 @@ export async function createPost(
 
 export async function getPost(
   request: FastifyRequest<GetParamsID>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { id } = request.params;
@@ -102,7 +106,7 @@ export async function getPost(
 
 export async function getLikedPostsByMe(
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { authorization } = request.headers;
@@ -119,7 +123,7 @@ export async function getLikedPostsByMe(
 
 export async function getUserPosts(
   request: FastifyRequest<PaginationProps<GetParamsID>>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { id } = request.params;
@@ -166,7 +170,7 @@ export async function getUserPosts(
 
 export async function updatePost(
   request: FastifyRequest<UpdatePostProps>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { authorization } = request.headers;
@@ -221,7 +225,7 @@ export async function updatePost(
 
 export async function deletePost(
   request: FastifyRequest<GetParamsID>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { authorization } = request.headers;
@@ -270,7 +274,7 @@ export async function deletePost(
 
 export async function feed(
   request: FastifyRequest<PaginationProps>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { authorization } = request.headers;
@@ -323,7 +327,7 @@ export async function feed(
 
 export async function explore(
   request: FastifyRequest<PaginationProps>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { authorization } = request.headers;
@@ -376,7 +380,7 @@ export async function explore(
 
 export async function likePost(
   request: FastifyRequest<LikePostProps>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { authorization } = request.headers;
@@ -416,7 +420,7 @@ export async function likePost(
 
 export async function unlikePost(
   request: FastifyRequest<LikePostProps>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { authorization } = request.headers;
