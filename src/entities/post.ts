@@ -2,6 +2,7 @@ import { Post as PostModel, User as UserModel } from "@prisma/client";
 
 interface Post extends PostModel {
   total_likes: number;
+  total_comments: number;
   user?: UserModel;
 }
 

@@ -67,10 +67,20 @@ export async function getPost(
 
     const totalLikes = await getPostLikesCache(id);
 
+    const totalComments = await prisma.comment.count({
+      where: {
+        postId: parseInt(id) || 0,
+      },
+    });
+
     const cachedPost = await getPostCache(id);
     if (cachedPost) {
       return {
-        data: { ...cachedPost, total_likes: totalLikes.length },
+        data: {
+          ...cachedPost,
+          total_likes: totalLikes.length,
+          total_comments: totalComments,
+        },
       };
     }
 
@@ -97,7 +107,11 @@ export async function getPost(
     await setPostCache(post.id, post);
 
     return reply.code(200).send({
-      data: { ...post, total_likes: totalLikes.length },
+      data: {
+        ...post,
+        total_likes: totalLikes.length,
+        total_comments: totalComments,
+      },
     });
   } catch (error) {
     return reply.code(500).send({ message: `Server error!` });
