@@ -29,12 +29,16 @@ export async function me(request: FastifyRequest, reply: FastifyReply) {
     const user = await session(authorization);
     const followers = await getFollowersCache(user.id);
     const following = await getFollowingCache(user.id);
+    const totalPosts = await prisma.post.count({
+      where: { userId: user.id || 0 },
+    });
 
     return reply.code(200).send({
       data: {
         ...user,
         followers: followers.length,
         following: following.length,
+        posts: totalPosts,
       },
     });
   } catch (error) {
@@ -44,7 +48,7 @@ export async function me(request: FastifyRequest, reply: FastifyReply) {
 
 export async function getUser(
   request: FastifyRequest<GetUserProps>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { id } = request.params;
@@ -55,6 +59,9 @@ export async function getUser(
 
     const followers = await getFollowersCache(id);
     const following = await getFollowingCache(id);
+    const totalPosts = await prisma.post.count({
+      where: { userId: parseInt(id) || 0 },
+    });
     const cachedUser = await getUserCache(id);
 
     if (cachedUser) {
@@ -63,6 +70,7 @@ export async function getUser(
           ...cachedUser,
           followers: followers.length,
           following: following.length,
+          posts: totalPosts,
         },
       };
     }
@@ -93,6 +101,7 @@ export async function getUser(
         ...user,
         followers: followers.length,
         following: following.length,
+        posts: totalPosts,
       },
     });
   } catch (error) {
@@ -102,7 +111,7 @@ export async function getUser(
 
 export async function getUserFollowers(
   request: FastifyRequest<GetUserPostsProps>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { id } = request.params;
@@ -153,7 +162,7 @@ export async function getUserFollowers(
 
 export async function getUserFollowings(
   request: FastifyRequest<GetUserPostsProps>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { id } = request.params;
@@ -204,7 +213,7 @@ export async function getUserFollowings(
 
 export async function updateProfile(
   request: FastifyRequest<UpdateUserProps>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { authorization } = request.headers;
@@ -248,7 +257,7 @@ export async function updateProfile(
 
 export async function updatePassword(
   request: FastifyRequest<UpdatePasswordProps>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { authorization } = request.headers;
@@ -292,7 +301,7 @@ export async function updatePassword(
 
 export async function search(
   request: FastifyRequest<SearchUserProps>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { authorization } = request.headers;
@@ -343,7 +352,7 @@ export async function search(
 
 export async function usersLikedPost(
   request: FastifyRequest<GetUserPostsProps>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { id } = request.params;
@@ -407,7 +416,7 @@ export async function usersLikedPost(
 
 export async function follow(
   request: FastifyRequest<FollowUserProps>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { authorization } = request.headers;
@@ -453,7 +462,7 @@ export async function follow(
 
 export async function unfollow(
   request: FastifyRequest<FollowUserProps>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     const { authorization } = request.headers;

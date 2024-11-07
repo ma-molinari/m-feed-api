@@ -166,6 +166,7 @@ export async function getUserPosts(
       take,
       skip,
       where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
     });
 
     for (const p of posts as Post[]) {
