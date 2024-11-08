@@ -163,6 +163,7 @@ export async function getUserPosts(
     });
 
     const posts = await prisma.post.findMany({
+      include: { user: true },
       take,
       skip,
       where: { userId: user.id },
@@ -171,7 +172,12 @@ export async function getUserPosts(
 
     for (const p of posts as Post[]) {
       const totalLikes = await getPostLikesCache(p.id);
+      const totalComments = await prisma.comment.count({
+        where: { postId: p.id },
+      });
+
       p.total_likes = totalLikes.length;
+      p.total_comments = totalComments;
     }
 
     return reply.code(200).send({
