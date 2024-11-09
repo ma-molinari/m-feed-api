@@ -28,7 +28,19 @@ export async function uploadFile(request: FastifyRequest, reply: FastifyReply) {
 
     return reply.code(200).send({ filename, mimetype: part.mimetype });
   } catch (error) {
-    console.log(error.message);
     return reply.code(500).send({ message: `Server error!` });
+  }
+}
+
+export async function deleteFile(filename: string) {
+  try {
+    const filepath = path.join(STATIC_PATH, filename);
+    await fs.promises.access(filepath, fs.constants.F_OK);
+    await fs.promises.unlink(filepath);
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      return;
+    }
+    throw error;
   }
 }

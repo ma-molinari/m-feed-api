@@ -20,6 +20,7 @@ import {
 } from "@cache/post";
 import session from "@utils/session";
 import { getFollowingCache, invalidateUserCache } from "@cache/user";
+import { deleteFile } from "./file";
 
 export async function createPost(
   request: FastifyRequest<CreatePostProps>,
@@ -261,6 +262,7 @@ export async function deletePost(
       select: {
         id: true,
         userId: true,
+        image: true,
       },
       where: {
         id: parseInt(id) || 0,
@@ -283,13 +285,16 @@ export async function deletePost(
       },
     });
 
+    await deleteFile(post.image);
     await invalidateUserCache(me.id);
     await invalidatePostCache(post.id);
     await invalidatePostLikesCache(me.id, post.id);
 
     return reply.code(200).send({ message: "ok" });
   } catch (error) {
-    return reply.code(500).send({ message: `Server error!` });
+    return reply
+      .code(500)
+      .send({ message: `Server error!`, error: error.message });
   }
 }
 

@@ -20,7 +20,7 @@ import { User } from "@prisma/client";
  */
 export async function setUserCache(
   userId: number | string,
-  user: Partial<User>
+  user: Partial<User>,
 ) {
   try {
     await RedisSetTTL(keyUserProfile(userId), user, 86400); // 1 day in seconds.
@@ -51,7 +51,7 @@ export async function invalidateUserCache(userId: number | string) {
  */
 export async function setUserFollowerCache(
   meId: number | string,
-  userId: number | string
+  userId: number | string,
 ) {
   try {
     await RedisAddList(keyUserFollowing(meId), [Date.now(), userId]);
@@ -81,14 +81,14 @@ export async function getFollowingCache(userId: number | string) {
 
 export async function invalidateUserFollowerCache(
   meId: number | string,
-  userId: number | string
+  userId: number | string,
 ) {
   try {
     await RedisRemoveFromList(keyUserFollowing(meId), userId);
     await RedisRemoveFromList(keyUserFollowers(userId), meId);
   } catch (error) {
     logger.error(
-      "An error occurred while clearing the user's followers cache."
+      "An error occurred while clearing the user's followers cache.",
     );
   }
 }

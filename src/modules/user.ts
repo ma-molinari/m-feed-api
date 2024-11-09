@@ -21,6 +21,7 @@ import {
 } from "@cache/user";
 import { getPostLikesCache } from "@cache/post";
 import { paginationProps } from "./pagination";
+import { deleteFile } from "./file";
 
 export async function me(request: FastifyRequest, reply: FastifyReply) {
   try {
@@ -242,6 +243,9 @@ export async function updateProfile(
       },
     });
 
+    if (body.avatar != me.avatar) {
+      await deleteFile(me.avatar);
+    }
     await invalidateUserCache(me.id);
 
     return reply.code(200).send({
@@ -251,7 +255,9 @@ export async function updateProfile(
       },
     });
   } catch (error) {
-    return reply.code(500).send({ message: `Server error!` });
+    return reply
+      .code(500)
+      .send({ message: `Server error!`, error: error.message });
   }
 }
 
