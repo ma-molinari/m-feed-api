@@ -270,7 +270,7 @@ export async function updatePassword(
     const { password, newPassword } = request.body;
 
     if (password === newPassword) {
-      return reply.code(401).send({
+      return reply.code(400).send({
         message: `New password cannot be the same as the previous.`,
       });
     }
@@ -283,7 +283,7 @@ export async function updatePassword(
     });
 
     if (!(await compare(password, user.password))) {
-      return reply.code(401).send({
+      return reply.code(400).send({
         message: `Invalid password.`,
       });
     }
