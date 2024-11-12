@@ -492,3 +492,39 @@ export async function unfollow(
     return reply.code(500).send({ message: `Server error!` });
   }
 }
+
+export async function userSuggestions(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
+  try {
+    const { authorization } = request.headers;
+    const me = await session(authorization);
+    const followedUsersIds = await getFollowingCache(me.id);
+
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        username: true,
+        fullName: true,
+        avatar: true,
+        _count: {
+          select: { posts: true },
+        },
+      },
+      where: {
+        id: { notIn: followedUsersIds.concat(me.id) },
+      },
+      orderBy: {
+        posts: {
+          _count: "desc",
+        },
+      },
+      take: 5,
+    });
+
+    return reply.code(200).send({ data: users });
+  } catch (error) {
+    return reply.code(500).send({ message: `Server error!` });
+  }
+}

@@ -11,6 +11,7 @@ import {
   updatePassword,
   updateProfile,
   usersLikedPost,
+  userSuggestions,
 } from "@modules/user";
 import {
   createPost,
@@ -57,6 +58,7 @@ export async function privateRouter(fastify: FastifyInstance) {
   fastify.put("/users/profile", updateProfile);
   fastify.patch("/users/password", updatePassword);
   fastify.get("/users/search", search);
+  fastify.get("/users/suggestions", userSuggestions);
   fastify.post("/users/follow", follow);
   fastify.post("/users/unfollow", unfollow);
 
