@@ -79,7 +79,7 @@ export const RedisGet = async (key: string) => {
  */
 export const RedisAddList = async (
   key: string,
-  payload: (string | number | Buffer)[]
+  payload: (string | number | Buffer)[],
 ) => {
   const result = await redis.zadd(key, ...payload);
   return result === 1;
@@ -96,7 +96,7 @@ export const RedisGetList = async (key: string) => {
 
 export const RedisRemoveFromList = async (
   key: string,
-  payload: string | number
+  payload: string | number,
 ) => {
   try {
     const result = await redis.zrem(key, payload);
@@ -112,7 +112,7 @@ export const RedisRemoveFromList = async (
 export const RedisSetTTL = async (
   key: string,
   payload: object | string,
-  seconds = 300
+  seconds = 300,
 ) => {
   const json = JSON.stringify(payload);
   const result = await redis.setex(key, seconds, json);
