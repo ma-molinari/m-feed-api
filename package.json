@@ -8,7 +8,8 @@
     "dev": "NODE_ENV=dev nodemon --watch src -e ts,tsx --exec ts-node -r tsconfig-paths/register src/index.ts",
     "start": "tsc -p . && node build/index.js",
     "build": "tsc -p .",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts",
+    "migrations": "prisma migrate dev"
   },
   "engines": {
     "node": ">=20.x"

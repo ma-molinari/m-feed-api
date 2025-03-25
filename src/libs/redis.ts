@@ -1,4 +1,7 @@
 import Redis from "ioredis";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const redis = new Redis({
   port: parseInt(process.env.REDIS_PORT),
