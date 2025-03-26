@@ -32,6 +32,7 @@ import {
   updateComment,
 } from "@modules/comment";
 import { uploadFile } from "@modules/file";
+import { notificationStream } from "@modules/notification";
 
 export async function publicRouter(fastify: FastifyInstance) {
   /**
@@ -39,6 +40,11 @@ export async function publicRouter(fastify: FastifyInstance) {
    */
   fastify.post("/login", login);
   fastify.post("/register", register);
+
+  /**
+   * Notification Routes
+   */
+  fastify.get("/notifications", notificationStream);
 }
 
 export async function privateRouter(fastify: FastifyInstance) {
