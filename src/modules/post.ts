@@ -21,6 +21,7 @@ import {
 import session from "@utils/session";
 import { getFollowingCache, invalidateUserCache } from "@cache/user";
 import { deleteFile } from "./file";
+import { notify, SSE_EVENTS } from "./notification";
 
 export async function createPost(
   request: FastifyRequest<CreatePostProps>,
@@ -39,13 +40,14 @@ export async function createPost(
       return reply.code(400).send({ message: `Image is required.` });
     }
 
-    await prisma.post.create({
+    const post = await prisma.post.create({
       data: {
         userId: me.id,
         image,
         content,
       },
     });
+    notify(SSE_EVENTS.CREATE_POST, post);
 
     await invalidateUserCache(me.id);
 
@@ -285,6 +287,7 @@ export async function deletePost(
       },
     });
 
+    notify(SSE_EVENTS.DELETE_POST, post);
     await deleteFile(post.image);
     await invalidateUserCache(me.id);
     await invalidatePostCache(post.id);

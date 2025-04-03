@@ -4,6 +4,7 @@ import session from "@utils/session";
 import { CreateCommentProps, GetParamsID } from "@entities/comment";
 import { PaginationProps } from "@entities/pagination";
 import { paginationProps } from "./pagination";
+import { notify, SSE_EVENTS } from "./notification";
 
 export async function createComment(
   request: FastifyRequest<CreateCommentProps>,
@@ -37,13 +38,14 @@ export async function createComment(
       return reply.code(404).send({ message: `Post not found.` });
     }
 
-    await prisma.comment.create({
+    const comment = await prisma.comment.create({
       data: {
         userId: me.id,
         postId: post.id,
         content,
       },
     });
+    notify(SSE_EVENTS.CREATE_COMMENT, comment);
 
     return reply.code(201).send({ message: "ok" });
   } catch (error) {
@@ -211,6 +213,7 @@ export async function deleteComment(
         id: comment.id,
       },
     });
+    notify(SSE_EVENTS.DELETE_COMMENT, comment);
 
     return reply.code(200).send({ message: "ok" });
   } catch (error) {

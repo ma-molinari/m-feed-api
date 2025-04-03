@@ -1,5 +1,12 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 
+export enum SSE_EVENTS {
+  CREATE_POST = "create-post",
+  DELETE_POST = "delete-post",
+  CREATE_COMMENT = "create-comment",
+  DELETE_COMMENT = "delete-comment",
+}
+
 let clients = new Set<FastifyReply>();
 
 export async function notificationStream(
@@ -16,7 +23,7 @@ export async function notificationStream(
   };
   reply.raw.writeHead(200, headers);
 
-  reply.raw.write(`data: ${JSON.stringify({ message: "Connected" })}\n\n`);
+  reply.raw.write(`data: ${JSON.stringify({ event: "connect" })}\n\n`);
 
   clients.add(reply);
 
@@ -25,13 +32,9 @@ export async function notificationStream(
   });
 }
 
-export function notify(message: Record<string, string>) {
+export function notify(event: SSE_EVENTS, content: Record<string, any>) {
+  const payload = JSON.stringify({ event, data: content });
   for (const client of clients) {
-    client.raw.write(`data: ${JSON.stringify(message)}\n\n`);
+    client.raw.write(`data: ${payload}\n\n`);
   }
 }
-
-setInterval(() => {
-  notify({ message: "Hello, world!" });
-  console.log("clients: ", clients.size)
-}, 5000);
