@@ -46,6 +46,16 @@ export async function createPost(
         image,
         content,
       },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            fullName: true,
+            avatar: true,
+          },
+        },
+      },
     });
     notify(SSE_EVENTS.CREATE_POST, post);
 
