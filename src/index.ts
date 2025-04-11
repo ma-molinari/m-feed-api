@@ -1,3 +1,6 @@
+if (process.env.NODE_ENV !== "dev") {
+  require("module-alias/register");
+}
 import Fastify, { FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
@@ -22,7 +25,7 @@ server.addHook("onRequest", authSession);
 
 const start = async () => {
   try {
-    await server.listen({ port: 8080 });
+    await server.listen({ host: "0.0.0.0", port: 8080 });
   } catch (err) {
     server.log.error(err);
     process.exit(1);

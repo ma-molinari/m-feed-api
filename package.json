@@ -6,7 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "NODE_ENV=dev nodemon --watch src -e ts,tsx --exec ts-node -r tsconfig-paths/register src/index.ts",
-    "start": "tsc -p . && node build/index.js",
+    "start": "tsc -p . && ts-node -r tsconfig-paths/register build/index.js",
     "build": "tsc -p .",
     "lint": "eslint . --ext .ts",
     "migrations": "prisma migrate dev"
@@ -46,7 +46,8 @@
     "nodemon": "3.1.7",
     "prettier": "3.3.3",
     "prisma": "5.21.1",
-    "ts-node": "^10.9.2",
+    "ts-node": "10.9.2",
+    "tsconfig-paths": "4.2.0",
     "tslint": "^6.1.3",
     "typescript": "^5.6.3"
   },

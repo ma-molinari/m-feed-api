@@ -243,7 +243,7 @@ export async function updateProfile(
       },
     });
 
-    if (body.avatar != me.avatar) {
+    if (me.avatar && body.avatar != me.avatar) {
       await deleteFile(me.avatar);
     }
     await invalidateUserCache(me.id);
