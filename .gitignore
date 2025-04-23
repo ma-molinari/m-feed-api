@@ -109,3 +109,5 @@ build
 
 /uploads
 /src/uploads
+
+docker-compose.yaml
